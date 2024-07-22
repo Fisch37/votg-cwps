@@ -1,44 +1,40 @@
 package com.cimadev.cimpleWaypointSystem.network;
 
-import com.cimadev.cimpleWaypointSystem.Main;
-import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
-import com.cimadev.cimpleWaypointSystem.network.packet.WaypointInfo;
-import com.cimadev.cimpleWaypointSystem.network.packet.WaypointsPayload;
+import com.cimadev.cimpleWaypointSystem.network.features.*;
+import com.cimadev.cimpleWaypointSystem.network.packet.ClientFeaturesPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class NetworkHandler {
-    private static void registerReceivers() {
+    private static final Map<ServerPlayNetworkHandler, ClientFeaturesPayload> FEATURE_REGISTRY = new HashMap<>();
+    private static final List<FeatureHandler> FEATURE_HANDLERS = List.of(
 
+    );
+
+    private static void updateFeatures(ClientFeaturesPayload features, ServerPlayNetworking.Context context) {
+        FEATURE_REGISTRY.put(
+                context.player().networkHandler,
+                features
+        );
+        for (FeatureHandler handler : FEATURE_HANDLERS) {
+            if (handler.qualifies(features))
+                handler.onQualification(context.player(), context.responseSender());
+        }
+    }
+
+    private static void registerReceivers() {
+        ServerPlayNetworking.registerGlobalReceiver(PacketTypes.CLIENT_FEATURES, NetworkHandler::updateFeatures);
     }
 
     public static void register() {
         PacketTypes.register();
         NetworkHandler.registerReceivers();
 
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            final ServerPlayerEntity player = handler.getPlayer();
-
-            List<Waypoint> waypoints;
-            if (handler.getPlayer().hasPermissionLevel(4)) {
-                waypoints = WpsUtils.getAllWaypoints();
-            } else {
-                waypoints = WpsUtils.getAccessibleWaypoints(player);
-            }
-
-            List<WaypointInfo> waypointInfos = new ArrayList<>(waypoints.size());
-            for (Waypoint waypoint : waypoints) {
-                waypointInfos.add(new WaypointInfo(
-                        waypoint,
-                        Main.serverState.waypointAccess(waypoint,player)
-                ));
-            }
-
-            sender.sendPacket(new WaypointsPayload(waypointInfos));
-        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> FEATURE_REGISTRY.remove(handler));
     }
 }
