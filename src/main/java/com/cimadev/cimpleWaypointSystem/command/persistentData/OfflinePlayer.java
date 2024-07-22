@@ -6,18 +6,26 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.Uuids;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 
 import static com.cimadev.cimpleWaypointSystem.Main.DEFAULT_COLOR;
 import static com.cimadev.cimpleWaypointSystem.Main.LINK_INACTIVE_COLOR;
 
 public class OfflinePlayer implements Comparable<OfflinePlayer> {
 
+    public static final PacketCodec<RegistryByteBuf, OfflinePlayer> PACKET_CODEC_LIMITED = PacketCodec.tuple(
+            Uuids.PACKET_CODEC, OfflinePlayer::getUuid,
+            PacketCodecs.STRING, OfflinePlayer::getName,
+            OfflinePlayer::new
+    );
     public static final DynamicCommandExceptionType INVALID_PLAYER_NAME = new DynamicCommandExceptionType(
             /*todo: change to PLAYER_COLOR*/
             o -> Text.literal("Player ").append( Text.literal( o+"" ).formatted(LINK_INACTIVE_COLOR) )
@@ -49,6 +57,14 @@ public class OfflinePlayer implements Comparable<OfflinePlayer> {
 
     public boolean removeFriend(OfflinePlayer notFriend) {
         return friends.remove(notFriend.getUuid());
+    }
+
+    public List<OfflinePlayer> getFriends() {
+        LinkedList<OfflinePlayer> playerFriends = new LinkedList<>();
+        for (UUID friendUuid : friends) {
+            playerFriends.add(OfflinePlayer.fromUuid(friendUuid));
+        }
+        return playerFriends;
     }
 
     @Override
