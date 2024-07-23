@@ -1,6 +1,10 @@
 package com.cimadev.cimpleWaypointSystem.network;
 
 import com.cimadev.cimpleWaypointSystem.network.packet.*;
+import com.cimadev.cimpleWaypointSystem.network.packet.friends.AddFriendPayload;
+import com.cimadev.cimpleWaypointSystem.network.packet.friends.FriendsListPayload;
+import com.cimadev.cimpleWaypointSystem.network.packet.friends.RemFriendPayload;
+import com.cimadev.cimpleWaypointSystem.network.packet.waypoints.WaypointsPayload;
 import net.minecraft.network.packet.CustomPayload;
 import net.minecraft.util.Identifier;
 

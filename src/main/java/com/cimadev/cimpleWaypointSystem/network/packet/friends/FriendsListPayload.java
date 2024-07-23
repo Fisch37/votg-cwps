@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.network.packet;
+package com.cimadev.cimpleWaypointSystem.network.packet.friends;
 
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;

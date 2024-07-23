@@ -1,6 +1,5 @@
-package com.cimadev.cimpleWaypointSystem.network.packet;
+package com.cimadev.cimpleWaypointSystem.network.packet.waypoints;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;

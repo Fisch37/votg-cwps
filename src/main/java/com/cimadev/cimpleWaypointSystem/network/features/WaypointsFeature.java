@@ -4,8 +4,8 @@ import com.cimadev.cimpleWaypointSystem.Main;
 import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
 import com.cimadev.cimpleWaypointSystem.network.packet.ClientFeaturesPayload;
-import com.cimadev.cimpleWaypointSystem.network.packet.WaypointInfo;
-import com.cimadev.cimpleWaypointSystem.network.packet.WaypointsPayload;
+import com.cimadev.cimpleWaypointSystem.network.packet.waypoints.WaypointInfo;
+import com.cimadev.cimpleWaypointSystem.network.packet.waypoints.WaypointsPayload;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.server.network.ServerPlayerEntity;
 

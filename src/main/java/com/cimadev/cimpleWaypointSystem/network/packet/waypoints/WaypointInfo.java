@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.network.packet;
+package com.cimadev.cimpleWaypointSystem.network.packet.waypoints;
 
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
 import net.minecraft.network.RegistryByteBuf;

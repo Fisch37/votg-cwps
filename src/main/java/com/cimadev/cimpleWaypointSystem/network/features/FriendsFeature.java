@@ -2,7 +2,7 @@ package com.cimadev.cimpleWaypointSystem.network.features;
 
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.network.packet.ClientFeaturesPayload;
-import com.cimadev.cimpleWaypointSystem.network.packet.FriendsListPayload;
+import com.cimadev.cimpleWaypointSystem.network.packet.friends.FriendsListPayload;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.server.network.ServerPlayerEntity;
 

@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.network.packet;
+package com.cimadev.cimpleWaypointSystem.network.packet.friends;
 
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.minecraft.network.RegistryByteBuf;
