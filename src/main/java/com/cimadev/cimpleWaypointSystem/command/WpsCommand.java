@@ -131,6 +131,25 @@ public class WpsCommand {
                                         .suggests(accessSuggestionsAdminsOpen)
                                         .executes(WpsCommand::wpsAddMine)
                 )))
+                .then(CommandManager.literal("move")
+                        .then(CommandManager.argument("name", string())
+                                .suggests(waypointSuggestionsOnlySelf)
+                                .executes(context -> wpsMove(
+                                        context,
+                                        OfflinePlayer.fromUuid(context.getSource().getPlayerOrThrow().getUuid())
+                                ))
+                                .then(CommandManager.literal("open")
+                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .executes(context -> wpsMove(context, null))
+                                )
+                                .then(CommandManager.argument("owner", word())
+                                        .suggests(new OfflinePlayerSuggestionProvider())
+                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .executes(context -> wpsMove(
+                                                context,
+                                                OfflinePlayer.fromContext(context, "owner")
+                                        ))
+                )))
                 .then(CommandManager.literal("set")
                         .requires(source -> source.hasPermissionLevel(3))
                         .then(CommandManager.argument("name", string())
@@ -226,6 +245,34 @@ public class WpsCommand {
                 .then(CommandManager.literal("listAll")
                         .requires(source -> source.hasPermissionLevel(4)) // only meant for printing to console
                         .executes(WpsCommand::wpsListAll)));
+    }
+
+    private static int wpsMove(
+            CommandContext<ServerCommandSource> context,
+            @Nullable OfflinePlayer owner
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String waypointName = StringArgumentType.getString(context, "name");
+        Waypoint waypoint = serverState.getWaypoint(new WaypointKey(
+                owner == null ? null : owner.getUuid(),
+                waypointName
+        ));
+        if (waypoint == null) {
+            context.getSource().sendFeedback(
+                    TextProvider.noWaypointFound(owner, waypointName, player),
+                    false
+            );
+            return 0;
+        } else {
+            // toImmutable is a safety because we cannot rely on a BlockPos being immutable by default >:(
+            BlockPos oldPos = waypoint.getPosition().toImmutable();
+            waypoint.setPosition(player.getBlockPos());
+            context.getSource().sendFeedback(
+                    TextProvider.waypointMoveSuccess(waypoint, oldPos, waypoint.getAccess()),
+                    false
+            );
+            return 1;
+        }
     }
 
     private static int wpsHelp(CommandContext<ServerCommandSource> context) {
