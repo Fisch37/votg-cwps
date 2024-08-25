@@ -1,10 +1,16 @@
 package com.cimadev.cimpleWaypointSystem.command;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
+import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.function.Supplier;
@@ -45,5 +51,37 @@ public abstract class TextProvider {
                 .append(waypoint.getNameFormatted())
                 .append(Text.literal("."))
                 .formatted(Colors.DEFAULT);
+    }
+
+    public static Supplier<Text> waypointMoveSuccess(
+            @NotNull Waypoint waypoint,
+            @NotNull BlockPos oldPos,
+            @NotNull AccessLevel oldAccess
+    ) {
+        return () -> {
+            HoverEvent movedTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(
+                    " Formerly at x: " + oldPos.getX()
+                            + ", y: " + oldPos.getY()
+                            + ", z: " + oldPos.getZ()
+            ));
+            MutableText moved = Text.literal("Moved").formatted(Formatting.UNDERLINE);
+            moved.setStyle(moved.getStyle().withHoverEvent(movedTooltip));
+
+            MutableText message = Text.literal("")
+                    .append(moved);
+            if (waypoint.getAccess() == AccessLevel.OPEN) message.append(" the ").append(waypoint.getAccessFormatted());
+            else message.append(" your ").append(oldAccess.getNameFormatted());
+            message.append(" waypoint ")
+                    .append(waypoint.getNameFormatted())
+                    .append(".")
+                    .formatted(Colors.DEFAULT);
+            if ( oldAccess != waypoint.getAccess() ) {
+                message.append(" It is now ")
+                        .append(waypoint.getAccessFormatted())
+                        .append(".")
+                        .formatted(Colors.DEFAULT);
+            }
+            return message;
+        };
     }
 }

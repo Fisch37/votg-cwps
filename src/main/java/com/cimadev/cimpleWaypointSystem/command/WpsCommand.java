@@ -24,7 +24,6 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
@@ -343,7 +342,11 @@ public class WpsCommand {
         if ( oldWaypoint == null ) {
             messageText = () -> wpsAdd(newWaypoint);
         } else if ( moveIfExists ) {
-            messageText = () -> wpsMove(oldWaypoint, newWaypoint);
+            messageText = TextProvider.waypointMoveSuccess(
+                    newWaypoint,
+                    oldWaypoint.getPosition(),
+                    oldWaypoint.getAccess()
+            );
         } else {
             messageText = () -> Text.literal("Your ")
                     .append(oldWaypoint.getAccessFormatted())
@@ -365,37 +368,6 @@ public class WpsCommand {
                 .append(newWaypoint.getNameFormatted())
                 .append(".")
                 .formatted(Colors.DEFAULT);
-    }
-
-    private static MutableText wpsMove(Waypoint oldWaypoint, Waypoint newWaypoint) {
-        BlockPos nwp = newWaypoint.getPosition();
-        AccessLevel access = newWaypoint.getAccess();
-        BlockPos owp = oldWaypoint.getPosition();
-        oldWaypoint.setPosition(nwp);
-        oldWaypoint.setYaw(newWaypoint.getYaw());
-        oldWaypoint.setAccess(access);
-
-        HoverEvent movedTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(" Formerly at x: "  + owp.getX() + ", y: " + owp.getY() + ", z: " + owp.getZ()));
-        MutableText moved = Text.literal("Moved").formatted(Formatting.UNDERLINE);
-        Style waypointStyle = moved.getStyle();
-        moved.setStyle(waypointStyle.withHoverEvent(movedTooltip));
-        Text oldAccess = oldWaypoint.getAccessFormatted();
-
-        MutableText message = Text.literal("")
-                .append(moved);
-        if (access == AccessLevel.OPEN) message.append(" the ").append(access.getNameFormatted());
-        else message.append(" your ").append(oldAccess);
-        message.append(" waypoint ")
-                .append(newWaypoint.getNameFormatted())
-                .append(".")
-                .formatted(Colors.DEFAULT);
-        if ( oldWaypoint.getAccess() != access ) {
-            message.append(" It is now ")
-                    .append(newWaypoint.getAccessFormatted())
-                    .append(".")
-                    .formatted(Colors.DEFAULT);
-        }
-        return message;
     }
 
     private static int wpsSetOpen(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
