@@ -290,13 +290,6 @@ public class WpsCommand {
 
         UUID ownerUuid = owner == null ? null : owner.getUuid();
         Waypoint waypoint = Main.serverState.getWaypoint(new WaypointKey(ownerUuid, name));
-        String ownerName;
-        if (owner != null) {
-            if (ownerUuid.equals(player.getUuid())) ownerName = "your ";
-            else ownerName = owner.getName() + "'s ";
-        } else {
-            ownerName = "";
-        }
 
         if (waypoint != null && Main.serverState.waypointAccess(waypoint, player)) {
             BlockPos wpPos = waypoint.getPosition();
@@ -305,19 +298,9 @@ public class WpsCommand {
             int yaw = waypoint.getYaw();
             player.teleport(world, wpPos.getX(), wpPos.getY(), wpPos.getZ(), yaw, 0);
 
-            messageText = () -> Text.literal("Teleported to ")
-                    .append(Text.literal(ownerName).formatted(Colors.PLAYER))
-                    .append(waypoint.getAccessFormatted())
-                    .append(Text.literal(" waypoint "))
-                    .append(waypoint.getNameFormatted())
-                    .append(Text.literal("."))
-                    .formatted(Colors.DEFAULT);
+            messageText = TextProvider.waypointTeleportSuccess(player, waypoint);
         } else {
-            messageText = () -> Text.literal(ownerName).formatted(Colors.PLAYER)
-                    .append(Text.literal(" waypoint "))
-                    .append(Text.literal( name ).formatted(Colors.LINK_INACTIVE))
-                    .append(Text.literal(" could not be found."))
-                    .formatted(Colors.DEFAULT);
+            messageText = TextProvider.noWaypointFound(owner, name, player);
         }
 
         commandSource.sendFeedback(messageText, false);
