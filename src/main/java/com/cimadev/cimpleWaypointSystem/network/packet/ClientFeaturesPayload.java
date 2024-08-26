@@ -31,10 +31,6 @@ public record ClientFeaturesPayload(int features) implements CustomPayload {
         return this.hasFeature(1);
     }
 
-    public boolean friends() {
-        return this.hasFeature(2);
-    }
-
 
     public static void register() {
         PayloadTypeRegistry.playC2S().register(CLIENT_FEATURES, PACKET_CODEC);

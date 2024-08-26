@@ -14,7 +14,6 @@ public abstract class NetworkHandler {
     private static final Map<ServerPlayNetworkHandler, ClientFeaturesPayload> FEATURE_REGISTRY = new HashMap<>();
     private static final List<FeatureHandler> FEATURE_HANDLERS = List.of(
             new WaypointsFeature(),
-            new FriendsFeature(),
             new WaypointManagerFeature()
     );
 
