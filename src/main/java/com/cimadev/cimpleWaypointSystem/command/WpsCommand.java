@@ -247,35 +247,6 @@ public class WpsCommand {
                         .executes(WpsCommand::wpsListAll)));
     }
 
-    private static int wpsMove(
-            CommandContext<ServerCommandSource> context,
-            @Nullable OfflinePlayer owner
-    ) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        String waypointName = StringArgumentType.getString(context, "name");
-        Waypoint waypoint = serverState.getWaypoint(new WaypointKey(
-                owner == null ? null : owner.getUuid(),
-                waypointName
-        ));
-        if (waypoint == null) {
-            context.getSource().sendFeedback(
-                    TextProvider.noWaypointFound(owner, waypointName, player),
-                    false
-            );
-            return 0;
-        } else {
-            // toImmutable is a safety because we cannot rely on a BlockPos being immutable by default >:(
-            BlockPos oldPos = waypoint.getPosition().toImmutable();
-            RegistryKey<World> oldDim = waypoint.getWorldRegKey();
-            waypoint.setPosition(player.getBlockPos());
-            context.getSource().sendFeedback(
-                    TextProvider.waypointMoveSuccess(waypoint, oldPos, oldDim, waypoint.getAccess()),
-                    false
-            );
-            return 1;
-        }
-    }
-
     private static int wpsHelp(CommandContext<ServerCommandSource> context) {
         Supplier<Text> messageText;
         ServerCommandSource source = context.getSource();
@@ -700,7 +671,8 @@ public class WpsCommand {
         return wpsRename(context, waypoint, oldName, newName, false);
     }
 
-    private static int wpsRename(CommandContext<ServerCommandSource> context, Waypoint waypoint, String oldName, String newName, boolean ownedByCaller) throws CommandSyntaxException {
+    private static int wpsRename(
+            CommandContext<ServerCommandSource> context, Waypoint waypoint, String oldName, String newName, boolean ownedByCaller) throws CommandSyntaxException {
         Supplier<Text> messageText;
 
         MutableText ownerTitle;
@@ -738,6 +710,35 @@ public class WpsCommand {
 
         context.getSource().sendFeedback(messageText, false);
         return 1;
+    }
+
+    private static int wpsMove(
+            CommandContext<ServerCommandSource> context,
+            @Nullable OfflinePlayer owner
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String waypointName = StringArgumentType.getString(context, "name");
+        Waypoint waypoint = serverState.getWaypoint(new WaypointKey(
+                owner == null ? null : owner.getUuid(),
+                waypointName
+        ));
+        if (waypoint == null) {
+            context.getSource().sendFeedback(
+                    TextProvider.noWaypointFound(owner, waypointName, player),
+                    false
+            );
+            return 0;
+        } else {
+            // toImmutable is a safety because we cannot rely on a BlockPos being immutable by default >:(
+            BlockPos oldPos = waypoint.getPosition().toImmutable();
+            RegistryKey<World> oldDim = waypoint.getWorldRegKey();
+            waypoint.setPosition(player.getBlockPos());
+            context.getSource().sendFeedback(
+                    TextProvider.waypointMoveSuccess(waypoint, oldPos, oldDim, waypoint.getAccess()),
+                    false
+            );
+            return 1;
+        }
     }
 
     private static int wpsSetHome(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
