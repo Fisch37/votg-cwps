@@ -13,6 +13,7 @@ public abstract class PacketTypes {
 
     public static final Id<WaypointsPayload> WAYPOINTS = id("waypoints");
     public static final Id<WaypointTeleport> TELEPORT = id("teleport");
+    public static final Id<WaypointUpdate> WAYPOINT_UPDATE = id("waypoint_update");
 
     private static <T extends CustomPayload> Id<T> id(String name) {
         return new Id<>(Identifier.of(MOD_ID, name));
@@ -23,5 +24,6 @@ public abstract class PacketTypes {
 
         WaypointsPayload.register();
         WaypointTeleport.register();
+        WaypointUpdate.register();
     }
 }
