@@ -71,27 +71,35 @@ public class Waypoint implements Comparable<Waypoint> {
         return worldRegKey;
     }
 
-    public void setName( String name ) {
-        this.key.setName(name);
+    private void markDirty() {
+        networking.markDirty(this);
     }
 
+    public void setName( String name ) {
+        this.key.setName(name);
+        markDirty();
+    }
 
     public void rename( String name ) {
         setName( name );
+        markDirty();
     }
 
     public void setPosition( BlockPos position ) {
         this.position = position;
+        markDirty();
     }
 
     public void setYaw( int yaw ) {
         this.yaw = yaw;
+        markDirty();
     }
 
     public void setAccess( AccessLevel access ) {
         if ( access != AccessLevel.OPEN ) {
             this.access = access;
         }
+        markDirty();
     }
 
     public AccessLevel getAccess() {
