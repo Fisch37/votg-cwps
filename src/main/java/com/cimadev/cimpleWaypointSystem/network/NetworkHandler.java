@@ -9,6 +9,7 @@ import net.minecraft.server.network.ServerPlayNetworkHandler;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public abstract class NetworkHandler {
     private static final Map<ServerPlayNetworkHandler, ClientFeaturesPayload> FEATURE_REGISTRY = new HashMap<>();
@@ -16,6 +17,10 @@ public abstract class NetworkHandler {
             new WaypointsFeature(),
             new WaypointManagerFeature()
     );
+
+    public static Set<Map.Entry<ServerPlayNetworkHandler, ClientFeaturesPayload>> getFeatures() {
+        return FEATURE_REGISTRY.entrySet();
+    }
 
     private static void updateFeatures(ClientFeaturesPayload features, ServerPlayNetworking.Context context) {
         FEATURE_REGISTRY.put(
