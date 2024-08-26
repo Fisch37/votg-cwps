@@ -266,9 +266,10 @@ public class WpsCommand {
         } else {
             // toImmutable is a safety because we cannot rely on a BlockPos being immutable by default >:(
             BlockPos oldPos = waypoint.getPosition().toImmutable();
+            RegistryKey<World> oldDim = waypoint.getWorldRegKey();
             waypoint.setPosition(player.getBlockPos());
             context.getSource().sendFeedback(
-                    TextProvider.waypointMoveSuccess(waypoint, oldPos, waypoint.getAccess()),
+                    TextProvider.waypointMoveSuccess(waypoint, oldPos, oldDim, waypoint.getAccess()),
                     false
             );
             return 1;
@@ -392,6 +393,7 @@ public class WpsCommand {
             messageText = TextProvider.waypointMoveSuccess(
                     newWaypoint,
                     oldWaypoint.getPosition(),
+                    oldWaypoint.getWorldRegKey(),
                     oldWaypoint.getAccess()
             );
         } else {

@@ -4,12 +4,14 @@ import com.cimadev.cimpleWaypointSystem.Colors;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.World;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +26,17 @@ public abstract class TextProvider {
         } else {
             return "";
         }
+    }
+
+    public static HoverEvent getPositionTooltip(BlockPos position, RegistryKey<World> dimension) {
+        return new HoverEvent(
+            HoverEvent.Action.SHOW_TEXT,
+            Text.literal(
+                    position.getX()
+                            + " " + position.getY()
+                            + " " + position.getZ()
+                            + " in " + dimension.getValue().toString()
+        ));
     }
 
     public static Supplier<Text> noWaypointFound(
@@ -56,14 +69,11 @@ public abstract class TextProvider {
     public static Supplier<Text> waypointMoveSuccess(
             @NotNull Waypoint waypoint,
             @NotNull BlockPos oldPos,
+            @NotNull RegistryKey<World> oldDimension,
             @NotNull AccessLevel oldAccess
     ) {
         return () -> {
-            HoverEvent movedTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(
-                    " Formerly at x: " + oldPos.getX()
-                            + ", y: " + oldPos.getY()
-                            + ", z: " + oldPos.getZ()
-            ));
+            HoverEvent movedTooltip = getPositionTooltip(oldPos, oldDimension);
             MutableText moved = Text.literal("Moved").formatted(Formatting.UNDERLINE);
             moved.setStyle(moved.getStyle().withHoverEvent(movedTooltip));
 

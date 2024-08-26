@@ -1,6 +1,7 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.TextProvider;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -102,14 +103,7 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public Text getNameFormatted() {
-        HoverEvent waypointTooltip = new HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                Text.literal(
-                        position.getX()
-                                + " " + position.getY()
-                                + " " + position.getZ()
-                                + " in " + worldRegKey.getValue().toString()
-                ));
+        HoverEvent waypointTooltip = TextProvider.getPositionTooltip(position, worldRegKey);
         ClickEvent waypointCommand;
         try {
             waypointCommand = new ClickEvent(
