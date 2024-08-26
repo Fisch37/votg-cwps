@@ -1,5 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
+import com.cimadev.cimpleWaypointSystem.Colors;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -12,9 +13,9 @@ import net.minecraft.util.Formatting;
 public class TpacceptCommand {
     private static final String COMMAND_NAME = "tpaccept";
     private static final Text NO_TPA_ERROR_MESSAGE =
-            Text.literal("There is no ").formatted(Formatting.RED)
+            Text.literal("There is no ").formatted(Colors.FAILURE)
             .append(Text.literal("/tpa").formatted(Formatting.YELLOW))
-            .append(Text.literal(" request open for you").formatted(Formatting.RED));
+            .append(Text.literal(" request open for you").formatted(Colors.FAILURE));
 
     public static void register(
             CommandDispatcher<ServerCommandSource> dispatcher,

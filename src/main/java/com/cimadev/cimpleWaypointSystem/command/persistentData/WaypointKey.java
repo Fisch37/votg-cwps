@@ -6,11 +6,13 @@ import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.util.Uuids;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Objects;
 import java.util.UUID;
 
-public class WaypointKey {
+public class WaypointKey implements Comparable<WaypointKey> {
     public static final PacketCodec<RegistryByteBuf, WaypointKey> PACKET_CODEC = PacketCodec.tuple(
             new NullableCodec<>(Uuids.PACKET_CODEC), WaypointKey::getOwner,
             PacketCodecs.STRING, WaypointKey::getName,
@@ -71,10 +73,34 @@ public class WaypointKey {
 
     @Override
     public boolean equals(Object obj) {
-        if (! (obj instanceof WaypointKey) ) return false;
-        WaypointKey that = (WaypointKey) obj;
-        if ( this.name.toLowerCase().equals(that.getName().toLowerCase()) && this.owner == null && that.getOwner() == null ) return true;
-        if (this.name.toLowerCase().equals(that.getName().toLowerCase()) && this.owner.equals(that.getOwner())) return true;
-        return false;
+        if (! (obj instanceof WaypointKey that) ) return false;
+
+        final boolean sameName = this.name.equalsIgnoreCase(that.name);
+        return sameName && Objects.equals(this.owner, that.owner);
+    }
+
+    /**
+     * Compares two {@link WaypointKey} objects according to their lexicographical ordering.
+     * <p>
+     * There are two steps to the comparison:
+     * 1. Comparison of ownership. If two {@link WaypointKey} objects have different owners,
+     *      the ordering of the keys matches that of their owners (by name).
+     *      Unowned waypoints are always considered less than owned waypoints.
+     * 2. Comparison of name. If two {@link WaypointKey} objects have the same owners (or both have no owner),
+     *      their ordering is determined by the lexicographical ordering of their names.
+     * <p>
+     * <em>API Note:</em> For consistency, the only possible values returned by this comparator are -1, 0, 1.
+     */
+    @Override
+    public int compareTo(@NotNull WaypointKey that) {
+        if (Objects.equals(this.owner, that.getOwner())) {
+            return Math.clamp(this.name.compareToIgnoreCase(that.name), -1, 1);
+        } else {
+            if (this.owner == null)
+                return -1;
+            else if (that.owner == null)
+                return 1;
+            return Math.clamp(this.owner.compareTo(that.owner), -1, 1);
+        }
     }
 }

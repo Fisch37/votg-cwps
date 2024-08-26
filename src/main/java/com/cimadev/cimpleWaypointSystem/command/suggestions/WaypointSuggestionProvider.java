@@ -1,7 +1,5 @@
 package com.cimadev.cimpleWaypointSystem.command.suggestions;
 import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -12,68 +10,89 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiPredicate;
 
 public class WaypointSuggestionProvider implements SuggestionProvider<ServerCommandSource> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaypointSuggestionProvider.class);
 
     private final boolean withOwner, removeImpossible;
+    private final @Nullable WaypointValidator predicate;
+    private final String waypointNameArgument;
 
     public WaypointSuggestionProvider() { this(false, false); }
     public WaypointSuggestionProvider(boolean withOwner, boolean removeImpossible) {
+        this(withOwner, removeImpossible, (WaypointValidator) null);
+    }
+    public WaypointSuggestionProvider(boolean withOwner, boolean removeImpossible, @NotNull String targetArgument) {
+        this(withOwner, removeImpossible, null, targetArgument);
+    }
+    public WaypointSuggestionProvider(
+            boolean withOwner,
+            boolean removeImpossible,
+            WaypointValidator predicate
+    ) {
+        this(withOwner, removeImpossible, predicate, "name");
+    }
+    
+    public WaypointSuggestionProvider(
+            boolean withOwner,
+            boolean removeImpossible,
+            @Nullable WaypointValidator predicate,
+            String targetArgument
+    ) {
         this.withOwner = withOwner;
         this.removeImpossible = removeImpossible;
+        this.predicate = predicate;
+        this.waypointNameArgument = targetArgument;
     }
 
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        /* TODO: Implement more consistent suggestions.
-            This class currently suggests open waypoints,
-            however these are typically not used by the underlying commands.
-            An example: /wps go open-waypoint will fail as /wps go open-waypoint open would be required.
-
-            Possible avenues to fix this:
-            1. Pass-through system for waypoint lookup.
-                This would mean waypoints names that aren't found will
-                be looked up in the open list, solving that problem.
-            2. Add argument constructor with boolean settings.
-                This would mean consistency but may be a worse solution overall.
-                Still it will cover /wps remove and /wps rename better.
-            3. Add more complicated permissions-based access determination
-                Most involved option but possibly best for user experience.
-         */
         ServerPlayerEntity player = context.getSource().getPlayer();
         String currentName;
-        // TODO: This is not the cleanest as it forces an argument "name" to exist for this to work
         try {
-            currentName = StringArgumentType.getString(context, "name");
+            currentName = StringArgumentType.getString(context, waypointNameArgument);
         } catch (IllegalArgumentException e) {
+            // NOTE: This fucks up everything when someone mistypes the argument name in the constructor
+            //      There is nothing we can do about this. If the player hasn't input anything, then the argument
+            //      does not exist. Same as mistyping. Fuck that.
             currentName = "";
         }
         List<Waypoint> waypoints = WpsUtils.getAccessibleWaypoints(player,null, false, false);
         for (Waypoint waypoint : waypoints) {
-            if (removeImpossible && !waypoint.getName().startsWith(currentName))
+            if (removeImpossible && !waypoint.getName().toLowerCase().startsWith(currentName.toLowerCase()))
+                continue;
+            if (predicate != null && !predicate.test(context.getSource(), waypoint))
                 continue;
             String suggestion;
             if (!withOwner)
-                suggestion = waypoint.getName();
-            else if (waypoint.getAccess() == AccessLevel.OPEN)
-                suggestion = waypoint.getName() + " " + AccessLevel.OPEN.getName();
+                suggestion = waypoint.getNameForCommand();
             else {
-                OfflinePlayer owner = waypoint.getOwnerPlayer();
-                if (owner == null) {
-                    LOGGER.warn("Waypoint {} has unknown owner", waypoint.getName());
+                try {
+                    suggestion = waypoint.getCommandComponent();
+                } catch (IllegalStateException e) {
+                    LOGGER.warn("Could not find owner of waypoint {}", waypoint.getName());
+                    continue;
+                } catch (IllegalArgumentException e) {
+                    LOGGER.error("Unowned secret (or other broken waypoint state) encountered", e);
                     continue;
                 }
-                suggestion = waypoint.getName() + " " + owner.getName();
             }
             builder.suggest(suggestion);
         }
 
         return builder.buildFuture();
+    }
+    
+    @FunctionalInterface
+    public interface WaypointValidator {
+        boolean test(ServerCommandSource source, Waypoint waypoint);
     }
 }

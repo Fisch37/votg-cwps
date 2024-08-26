@@ -1,5 +1,7 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
+import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.TextProvider;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -101,21 +103,56 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public Text getNameFormatted() {
-        HoverEvent waypointTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("x: " + position.getX() + ", y: " + position.getY() + ", z: " + position.getZ()));
-        ClickEvent waypointCommand = new ClickEvent(
-                ClickEvent.Action.SUGGEST_COMMAND,
-                "/wps go "
-                        + this.getName()
-                        + " "
-                        + (this.getOwnerPlayer() == null ? "open" : this.getOwnerPlayer().getName())
-                );
-        MutableText waypointName = Text.literal(key.getName()).formatted(LINK_COLOR, Formatting.UNDERLINE);
-        Style waypointStyle = waypointName.getStyle();
-        waypointName.setStyle(waypointStyle
-                        .withHoverEvent(waypointTooltip)
-                        .withClickEvent(waypointCommand)
-        );
+        HoverEvent waypointTooltip = TextProvider.getPositionTooltip(position, worldRegKey);
+        ClickEvent waypointCommand;
+        try {
+            waypointCommand = new ClickEvent(
+                    ClickEvent.Action.SUGGEST_COMMAND,
+                    "/wps go " + getCommandComponent()
+            );
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            waypointCommand = null;
+        }
+        MutableText waypointName = Text.literal(key.getName()).formatted(Colors.LINK, Formatting.UNDERLINE);
+        Style waypointStyle = waypointName.getStyle()
+                .withHoverEvent(waypointTooltip);
+        if (waypointCommand != null)
+            waypointStyle = waypointStyle.withClickEvent(waypointCommand);
+        waypointName.setStyle(waypointStyle);
         return waypointName;
+    }
+
+    private String wrapString(String s) {
+            return "\"" + s + "\"";
+    }
+
+    public String getNameForCommand() {
+        return wrapString(getName());
+    }
+
+    /**
+     * Creates a string that would be an allowed identifier for this waypoint in a /wps command.
+     * This consists of the waypoint name (quoted if necessary) and the owner (or "open" if the waypoint is open)
+     * @return The command component for this waypoint or <code>null</code> if the waypoint is in an invalid state
+     * @throws IllegalStateException If the owner of this waypoint does not exist in the cache (which should be impossible)
+     * @throws IllegalArgumentException If the waypoint is non-open but does not have an owner (e.g. unowned secret)
+     */
+    public @Nullable String getCommandComponent() throws IllegalStateException {
+        String ownerPart;
+        if (access == AccessLevel.OPEN)
+            ownerPart = AccessLevel.OPEN.getName();
+        else {
+            if (getOwner() == null)
+                throw new IllegalArgumentException("Waypoint %s is non-open without an owner".formatted(this));
+            OfflinePlayer player = getOwnerPlayer();
+            if (player == null)
+                throw new IllegalStateException(
+                        "Waypoint#getCommandComponent Could not find an OfflinePlayer for waypoint %s"
+                                .formatted(this)
+                );
+            ownerPart = player.getName();
+        }
+        return getNameForCommand() + " " + ownerPart;
     }
 
     private Waypoint(WaypointKey key, BlockPos pos, RegistryKey<World> world, Integer yaw, AccessLevel access) {
@@ -167,52 +204,13 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     /**
-     * Compares this object with the specified object for order.  Returns a
-     * negative integer, zero, or a positive integer as this object is less
-     * than, equal to, or greater than the specified object.
-     *
-     * <p>The implementor must ensure {@link Integer#signum
-     * signum}{@code (x.compareTo(y)) == -signum(y.compareTo(x))} for
-     * all {@code x} and {@code y}.  (This implies that {@code
-     * x.compareTo(y)} must throw an exception if and only if {@code
-     * y.compareTo(x)} throws an exception.)
-     *
-     * <p>The implementor must also ensure that the relation is transitive:
-     * {@code (x.compareTo(y) > 0 && y.compareTo(z) > 0)} implies
-     * {@code x.compareTo(z) > 0}.
-     *
-     * <p>Finally, the implementor must ensure that {@code
-     * x.compareTo(y)==0} implies that {@code signum(x.compareTo(z))
-     * == signum(y.compareTo(z))}, for all {@code z}.
-     *
-     * @param other the object to be compared.
-     * @return a negative integer, zero, or a positive integer as this object
-     * is less than, equal to, or greater than the specified object.
-     * @throws NullPointerException if the specified object is null
-     * @throws ClassCastException   if the specified object's type prevents it
-     *                              from being compared to this object.
-     * @apiNote It is strongly recommended, but <i>not</i> strictly required that
-     * {@code (x.compareTo(y)==0) == (x.equals(y))}.  Generally speaking, any
-     * class that implements the {@code Comparable} interface and violates
-     * this condition should clearly indicate this fact.  The recommended
-     * language is "Note: this class has a natural ordering that is
-     * inconsistent with equals."
+     * Compares two {@link Waypoint}s by their keys.
+     * This is shorthand for <code>this.getKey().compareTo(that.getKey())</code>
+     * @param that the object to be compared.
+     * @return The ordering of the {@link Waypoint}s according to {@link WaypointKey#compareTo}
      */
     @Override
-    public int compareTo(@NotNull Waypoint other) {
-        // TODO: WTF is going on here?
-        OfflinePlayer owner1 = this.getOwnerPlayer();
-        OfflinePlayer owner2 = other.getOwnerPlayer();
-
-        if ( owner1 == null ) return -1;
-        else if (owner2 == null) return 1;
-
-        int ownerRelation = owner1.getName().compareTo(owner2.getName());
-        if (ownerRelation > 0) return 1;
-        else if (ownerRelation < 0) return -1;
-        else {
-            int nameRelation = this.getName().compareTo(other.getName());
-            return Integer.compare(nameRelation, 0);
-        }
+    public int compareTo(@NotNull Waypoint that) {
+        return this.key.compareTo(that.key);
     }
 }

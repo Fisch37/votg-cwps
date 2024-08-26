@@ -1,5 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
+import com.cimadev.cimpleWaypointSystem.FriendsIntegration;
 import com.cimadev.cimpleWaypointSystem.Main;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -90,7 +91,7 @@ public class ServerState extends PersistentState {
         // waypoint only visible by admins by listing all waypoints
         if ( owner == null ) return false;
 
-        if ( waypoint.getAccess() == AccessLevel.PRIVATE && owner.likes( playerUuid ) ) {
+        if ( waypoint.getAccess() == AccessLevel.PRIVATE && FriendsIntegration.areFriends(owner.getUuid(), playerUuid) ) {
             return true;
         }
 

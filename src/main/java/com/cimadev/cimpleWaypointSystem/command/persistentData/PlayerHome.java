@@ -1,5 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
+import com.cimadev.cimpleWaypointSystem.Colors;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.text.HoverEvent;
@@ -11,8 +12,6 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 
 import java.util.UUID;
-
-import static com.cimadev.cimpleWaypointSystem.Main.LINK_COLOR;
 
 public class PlayerHome {
     private BlockPos position;
@@ -40,7 +39,7 @@ public class PlayerHome {
 
     public Text positionHover(String text) {
         HoverEvent positionTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("x: " + position.getX() + ", y: " + position.getY() + ", z: " + position.getZ()));
-        MutableText formatted = Text.literal(text).formatted(LINK_COLOR, Formatting.UNDERLINE);
+        MutableText formatted = Text.literal(text).formatted(Colors.LINK, Formatting.UNDERLINE);
         Style waypointStyle = formatted.getStyle();
         formatted.setStyle(waypointStyle.withHoverEvent(positionTooltip));
         return formatted;

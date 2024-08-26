@@ -16,7 +16,6 @@ import static com.cimadev.cimpleWaypointSystem.Main.MOD_ID;
 
 public class Config {
     public final ConfigEntry<AccessLevel> defaultAccess;
-    public final ConfigEntry<Boolean> friendshipEnabled;
     public final ConfigEntry<List<AccessLevel>> disabledAccessLevels;
     public final ConfigEntry<Boolean> preferOpenForDerived;
 
@@ -43,11 +42,6 @@ public class Config {
                 "Sets behaviour on the /wps go <name> shorthand.",
                 "When set to true, first checks for an open waypoint matching <name>,",
                 "otherwise checks for a self-owned waypoint first."
-        );
-        friendshipEnabled = builder.booleanEntry(
-                "enable-friendship",
-                true,
-                "Enable or disable the friendship mechanic"
         );
     }
 

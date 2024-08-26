@@ -7,11 +7,13 @@ import java.util.HashSet;
 
 public class TeleportRequest extends MINode {
         private final PlayerEntity origin, target;
+        private final boolean inverted;
         private long expiresAt;
 
-        public TeleportRequest(PlayerEntity origin, PlayerEntity target) {
+        public TeleportRequest(PlayerEntity origin, PlayerEntity target, boolean inverted) {
                 this.origin = origin;
                 this.target = target;
+                this.inverted = inverted;
         }
 
         public void setExpirationDate(long tick) {
@@ -30,15 +32,27 @@ public class TeleportRequest extends MINode {
                 return target;
         }
 
-        public void perform() {
-                this.origin.teleport(
-                        this.target.getServer().getWorld(this.target.getWorld().getRegistryKey()),
-                        this.target.getX(),
-                        this.target.getY(),
-                        this.target.getZ(),
+        public boolean isInverted() {
+                return inverted;
+        }
+
+        private void perform(PlayerEntity tpOrigin, PlayerEntity tpTarget) {
+                tpOrigin.teleport(
+                        tpTarget.getServer().getWorld(tpTarget.getWorld().getRegistryKey()),
+                        tpTarget.getX(),
+                        tpTarget.getY(),
+                        tpTarget.getZ(),
                         new HashSet<>(),
-                        this.target.getYaw(),
-                        this.target.getPitch()
+                        tpTarget.getYaw(),
+                        tpTarget.getPitch()
                 );
+        }
+
+        public void perform() {
+                if (inverted) {
+                        perform(target, origin);
+                } else {
+                        perform(origin, target);
+                }
         }
 }

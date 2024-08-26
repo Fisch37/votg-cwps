@@ -1,5 +1,5 @@
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'fabric-loom' version '1.7-SNAPSHOT'
 	id 'maven-publish'
 }
 
@@ -19,6 +19,12 @@ repositories {
 	maven {
 		name = 'henkelmax.public'
 		url = 'https://maven.maxhenkel.de/repository/public'
+	}
+	maven {
+		url = "https://api.modrinth.com/maven"
+		content {
+			includeGroup "maven.modrinth"
+		}
 	}
 }
 
@@ -45,6 +51,10 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+
+	// FischyFriends API. Required for private waypoints to work correctly
+	modCompileOnly "maven.modrinth:fischy-friends:${project.friends_version}"
 }
 
 processResources {

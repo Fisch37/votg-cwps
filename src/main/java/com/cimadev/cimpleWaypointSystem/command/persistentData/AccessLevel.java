@@ -1,5 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
+import com.cimadev.cimpleWaypointSystem.Colors;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -13,10 +14,10 @@ import net.minecraft.util.Formatting;
 import static com.cimadev.cimpleWaypointSystem.Main.*;
 
 public enum AccessLevel {
-    SECRET("secret", SECRET_COLOR),
-    PRIVATE("private", PRIVATE_COLOR),
-    PUBLIC("public", PUBLIC_COLOR),
-    OPEN("open", OPEN_COLOR);
+    SECRET("secret", Colors.SECRET),
+    PRIVATE("private", Colors.PRIVATE),
+    PUBLIC("public", Colors.PUBLIC),
+    OPEN("open", Colors.OPEN);
 
     public static final PacketCodec<RegistryByteBuf, AccessLevel> PACKET_CODEC = PacketCodec.of(
             (val, buf) -> buf.writeByte(val.ordinal()),

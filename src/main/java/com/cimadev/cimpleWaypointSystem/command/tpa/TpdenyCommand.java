@@ -1,9 +1,9 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
+import com.cimadev.cimpleWaypointSystem.Colors;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.CommandManager;
@@ -12,15 +12,13 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import static com.cimadev.cimpleWaypointSystem.Main.DEFAULT_COLOR;
-import static com.cimadev.cimpleWaypointSystem.Main.PLAYER_COLOR;
 
 public class TpdenyCommand {
     private static final String COMMAND_NAME = "tpdeny";
     private static final Text NO_TPA_ERROR =
-            Text.literal("There is no").formatted(Formatting.RED)
+            Text.literal("There is no").formatted(Colors.FAILURE)
             .append(Text.literal("/tpa").formatted(Formatting.YELLOW))
-            .append(Text.literal(" request open for you").formatted(Formatting.RED));
+            .append(Text.literal(" request open for you").formatted(Colors.FAILURE));
 
 
     public static void register(
@@ -44,12 +42,12 @@ public class TpdenyCommand {
         PlayerEntity origin = request.getOrigin();
         player.sendMessage(
                 Text.literal("The teleport request from ")
-                        .append(origin.getName().copy().formatted(PLAYER_COLOR))
+                        .append(origin.getName().copy().formatted(Colors.PLAYER))
                         .append(" has been denied!")
-                        .formatted(DEFAULT_COLOR)
+                        .formatted(Colors.DEFAULT)
         );
         origin.sendMessage(
-                player.getName().copy().formatted(PLAYER_COLOR)
+                player.getName().copy().formatted(Colors.PLAYER)
                 .append(Text.literal(" has denied your teleport request").formatted(Formatting.RED))
         );
         return 1;

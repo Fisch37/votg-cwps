@@ -7,13 +7,14 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 
 public class TeleportRequestManager {
-    private final HashMap<PlayerEntity, TeleportRequest> playerToRequest;
+    private final HashMap<PlayerEntity, TeleportRequest> playerToRequest, originToRequest;
     private final MIQueue<TeleportRequest> requests;
     private final static TeleportRequestManager SINGLETON = new TeleportRequestManager();
     private long currentTick = 0;
 
     protected TeleportRequestManager() {
         this.playerToRequest = new HashMap<>();
+        this.originToRequest = new HashMap<>();
         this.requests = new MIQueue<>();
     }
 
@@ -32,6 +33,7 @@ public class TeleportRequestManager {
         request.setExpirationDate(currentTick + this.getRequestTTL());
         this.requests.add(request);
         this.playerToRequest.put(request.getTarget(), request);
+        this.originToRequest.put(request.getOrigin(), request);
     }
 
     public @Nullable TeleportRequest getRequest(PlayerEntity target) {
@@ -50,8 +52,18 @@ public class TeleportRequestManager {
         return wasRemoved;
     }
 
+    public @Nullable TeleportRequest removeRequestByOrigin(PlayerEntity origin) {
+        @Nullable TeleportRequest request = this.originToRequest.remove(origin);
+        if (request != null) request.dropout();
+        return request;
+    }
+
     public boolean hasRequest(PlayerEntity target) {
         return this.playerToRequest.containsKey(target);
+    }
+
+    public boolean hasOpenRequest(PlayerEntity origin) {
+        return this.originToRequest.containsKey(origin);
     }
 
     public long getRequestTTL() {
