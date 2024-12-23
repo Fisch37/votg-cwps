@@ -1,5 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
+import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
 import de.fisch37.datastructures.mi.MINode;
 import net.minecraft.entity.player.PlayerEntity;
 
@@ -37,12 +38,12 @@ public class TeleportRequest extends MINode {
         }
 
         private void perform(PlayerEntity tpOrigin, PlayerEntity tpTarget) {
-                tpOrigin.teleport(
+                WpsUtils.teleport(
+                        tpOrigin,
                         tpTarget.getServer().getWorld(tpTarget.getWorld().getRegistryKey()),
                         tpTarget.getX(),
                         tpTarget.getY(),
                         tpTarget.getZ(),
-                        new HashSet<>(),
                         tpTarget.getYaw(),
                         tpTarget.getPitch()
                 );

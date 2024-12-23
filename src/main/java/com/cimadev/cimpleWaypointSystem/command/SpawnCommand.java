@@ -34,7 +34,8 @@ public class SpawnCommand {
         ServerPlayerEntity player = commandSource.getPlayerOrThrow();
         ServerWorld overworld = player.getServer().getOverworld();
         BlockPos spawn = overworld.getSpawnPos();
-        player.teleport(overworld, spawn.getX(), spawn.getY(), spawn.getZ(), 0, 0);
+        WpsUtils.teleport(player, overworld, spawn.getX(), spawn.getY(), spawn.getZ(), 0, 0);
+        // TODO: Is requestTeleport a duplicate?
         player.requestTeleport(spawn.getX(), spawn.getY(), spawn.getZ());
         Supplier<Text> messageText = () -> Text.literal("Teleported to the spawnpoint.").formatted(Colors.DEFAULT);
         commandSource.sendFeedback(messageText, false);

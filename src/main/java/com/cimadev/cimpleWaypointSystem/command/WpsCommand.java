@@ -304,7 +304,7 @@ public class WpsCommand {
             ServerWorld world = server.getWorld(waypoint.getWorldRegKey());
             if ( world == null ) return -1;
             int yaw = waypoint.getYaw();
-            player.teleport(world, wpPos.getX(), wpPos.getY(), wpPos.getZ(), yaw, 0);
+            WpsUtils.teleport(player, world, wpPos.getX(), wpPos.getY(), wpPos.getZ(), yaw, 0);
 
             messageText = () -> Text.literal("Teleported to ")
                     .append(Text.literal(ownerName).formatted(Colors.PLAYER))
