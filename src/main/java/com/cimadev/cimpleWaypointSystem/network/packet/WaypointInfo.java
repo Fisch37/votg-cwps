@@ -8,7 +8,7 @@ import net.minecraft.network.codec.PacketCodecs;
 public record WaypointInfo(Waypoint waypoint, boolean accessible) {
     public static final PacketCodec<RegistryByteBuf, WaypointInfo> PACKET_CODEC = PacketCodec.tuple(
             Waypoint.PACKET_CODEC, WaypointInfo::waypoint,
-            PacketCodecs.BOOL, WaypointInfo::accessible,
+            PacketCodecs.BOOLEAN, WaypointInfo::accessible,
             WaypointInfo::new
     );
 }
