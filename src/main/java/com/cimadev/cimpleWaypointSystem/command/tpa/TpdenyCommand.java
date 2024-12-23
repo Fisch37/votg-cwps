@@ -48,7 +48,8 @@ public class TpdenyCommand {
         );
         origin.sendMessage(
                 player.getName().copy().formatted(Colors.PLAYER)
-                .append(Text.literal(" has denied your teleport request").formatted(Formatting.RED))
+                .append(Text.literal(" has denied your teleport request").formatted(Formatting.RED)),
+                false
         );
         return 1;
     }

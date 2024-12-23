@@ -18,7 +18,8 @@ public class TpaMessages {
                         .append(" Use")
                         .append(literalCommand("/tpcancel", "Click to cancel"))
                         .append(" to cancel it.")
-                .formatted(Colors.FAILURE)
+                .formatted(Colors.FAILURE),
+                false
         );
     }
 
@@ -27,7 +28,8 @@ public class TpaMessages {
                 request.getTarget().getName().copy().formatted(Colors.PLAYER)
                 .append(Text.literal(" already has a teleport request waiting. Try again later")
                         .formatted(Formatting.RED)
-                )
+                ),
+                false
         );
     }
 
@@ -59,7 +61,8 @@ public class TpaMessages {
                         .append(" seconds.")
                         .formatted(Colors.TIME)
                 )
-                .formatted(Colors.DEFAULT)
+                .formatted(Colors.DEFAULT),
+                false
         );
     }
 
@@ -68,7 +71,8 @@ public class TpaMessages {
                 Text.literal("")
                         .append(request.getTarget().getName().copy().formatted(Colors.PLAYER))
                         .append(" has received your teleport request.")
-                        .formatted(Colors.DEFAULT)
+                        .formatted(Colors.DEFAULT),
+                false
         );
     }
 

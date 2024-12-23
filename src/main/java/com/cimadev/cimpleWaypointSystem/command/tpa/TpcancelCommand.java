@@ -29,7 +29,8 @@ public class TpcancelCommand {
             request.getTarget().sendMessage(
                     player.getName().copy().formatted(Colors.PLAYER)
                             .append(" has cancelled their teleport request.")
-                            .formatted(Colors.DEFAULT)
+                            .formatted(Colors.DEFAULT),
+                    false
             );
             player.sendMessage(Text.literal("Your teleport request to ")
                     .append(player.getName().copy().formatted(Colors.PLAYER))
