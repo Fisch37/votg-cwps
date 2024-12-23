@@ -56,6 +56,9 @@ public abstract class FriendsIntegration {
     }
 
     public static boolean areFriends(UUID a, UUID b) {
+        if (a.equals(b))
+            // Self-hate is not part of our user model
+            return true;
         if (isInstalled()) {
             return getAPI().areFriends(a, b);
         } else {
