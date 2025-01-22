@@ -148,10 +148,14 @@ public class ServerState extends PersistentState {
         playerHomes.values().forEach( playerHome -> playerHomesList.add(playerHome.toNbt()) );
         nbt.put("playerHomes", playerHomesList);
 
+        DataFixer.setToCurrentVersion(nbt);
+
         return nbt;
     }
 
     public static ServerState createFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
+        tag = DataFixer.fixData(tag);
+
         ServerState serverState = new ServerState();
         NbtList pList = tag.getList("playerList", NbtElement.COMPOUND_TYPE);
         pList.forEach( nbt -> serverState.loadPlayer( OfflinePlayer.fromNbt((NbtCompound) nbt)) );
