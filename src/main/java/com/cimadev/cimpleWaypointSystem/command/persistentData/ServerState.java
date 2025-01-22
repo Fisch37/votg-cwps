@@ -154,9 +154,13 @@ public class ServerState extends PersistentState {
     }
 
     public static ServerState createFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
+        NbtCompound oldTag = tag;
         tag = DataFixer.fixData(tag);
 
+
         ServerState serverState = new ServerState();
+        if (!DataFixer.isCurrentVersion(oldTag))
+            serverState.markDirty();
         NbtList pList = tag.getList("playerList", NbtElement.COMPOUND_TYPE);
         pList.forEach( nbt -> serverState.loadPlayer( OfflinePlayer.fromNbt((NbtCompound) nbt)) );
 

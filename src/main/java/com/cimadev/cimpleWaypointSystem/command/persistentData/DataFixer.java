@@ -40,6 +40,10 @@ public class DataFixer {
         tag.putInt("data_version", CURRENT_VERSION);
     }
 
+    public static boolean isCurrentVersion(NbtCompound tag) {
+        return tag.getInt("data_version") == CURRENT_VERSION;
+    }
+
     public static NbtCompound fixData(NbtCompound data) {
         int dataVersion = data.getInt("data_version");
         if (dataVersion == CURRENT_VERSION) {
