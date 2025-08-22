@@ -18,6 +18,9 @@
 	"entrypoints": {
 		"main": [
 			"com.cimadev.cimpleWaypointSystem.Main"
+		],
+		"fischy_friends": [
+			"com.cimadev.cimpleWaypointSystem.FriendsEntrypoint"
 		]
 	},
 	"mixins": [

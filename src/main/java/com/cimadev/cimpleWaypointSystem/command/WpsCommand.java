@@ -26,6 +26,7 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.*;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -299,7 +300,7 @@ public class WpsCommand {
         }
 
         if (waypoint != null && Main.serverState.waypointAccess(waypoint, player)) {
-            BlockPos wpPos = waypoint.getPosition();
+            Vec3d wpPos = waypoint.getPosition().toBottomCenterPos();
             ServerWorld world = server.getWorld(waypoint.getWorldRegKey());
             if ( world == null ) return -1;
             int yaw = waypoint.getYaw();
