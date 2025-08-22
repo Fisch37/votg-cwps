@@ -2,13 +2,15 @@ package com.cimadev.cimpleWaypointSystem.command.tpa;
 
 import de.fisch37.datastructures.mi.MIQueue;
 import net.minecraft.entity.player.PlayerEntity;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 
 public class TeleportRequestManager {
-    private final HashMap<PlayerEntity, TeleportRequest> playerToRequest, originToRequest;
-    private final MIQueue<TeleportRequest> requests;
+    private final HashMap<PlayerEntity, @NotNull TeleportRequest> playerToRequest, originToRequest;
+    private final MIQueue<@NotNull TeleportRequest> requests;
     private final static TeleportRequestManager SINGLETON = new TeleportRequestManager();
     private long currentTick = 0;
 
@@ -41,22 +43,27 @@ public class TeleportRequestManager {
     }
 
     public @Nullable TeleportRequest removeRequest(PlayerEntity target) {
-        @Nullable TeleportRequest request = this.playerToRequest.remove(target);
-        if (request != null) request.dropout();
-        return request;
-    }
-    public boolean removeRequest(TeleportRequest request) {
-        boolean wasRemoved = this.playerToRequest.remove(request.getTarget(), request);
-        // Do not dropout if not in queue
-        if (wasRemoved) request.dropout();
-        return wasRemoved;
+        @Nullable TeleportRequest request = this.playerToRequest.get(target);
+        return removeRequest(request);
     }
 
     public @Nullable TeleportRequest removeRequestByOrigin(PlayerEntity origin) {
-        @Nullable TeleportRequest request = this.originToRequest.remove(origin);
-        if (request != null) request.dropout();
+        @Nullable TeleportRequest request = this.originToRequest.get(origin);
+        return removeRequest(request);
+    }
+
+    @Contract("_ -> param1")
+    public @Nullable TeleportRequest removeRequest(@Nullable TeleportRequest request) {
+        if (request != null) {
+            boolean wasRemoved = this.playerToRequest.remove(request.getTarget(), request)
+                    | this.originToRequest.remove(request.getOrigin(), request);
+            // Do not drop out if not in queue
+            if (wasRemoved)
+                request.dropout();
+        }
         return request;
     }
+
 
     public boolean hasRequest(PlayerEntity target) {
         return this.playerToRequest.containsKey(target);
