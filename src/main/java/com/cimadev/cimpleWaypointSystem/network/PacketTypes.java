@@ -1,29 +1,98 @@
 package com.cimadev.cimpleWaypointSystem.network;
 
-import com.cimadev.cimpleWaypointSystem.network.packet.*;
-import com.cimadev.cimpleWaypointSystem.network.packet.waypoints.*;
+import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
+import com.cimadev.cimpleWaypointSystem.command.persistentData.WaypointKey;
+import com.cimadev.cimpleWaypointSystem.network.classes.ChannelFlags;
+import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.EnumCodec;
+import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.EnumSetPacketCodec;
+import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.NullableCodec;
+import com.cimadev.cimpleWaypointSystem.network.packets.handshake.ClientHello;
+import com.cimadev.cimpleWaypointSystem.network.packets.tpa.NewTeleportRequest;
+import com.cimadev.cimpleWaypointSystem.network.packets.tpa.TeleportEvent;
+import com.cimadev.cimpleWaypointSystem.network.packets.waypointAdmin.AllWaypoints;
+import com.cimadev.cimpleWaypointSystem.network.packets.waypoints.AccessibleWaypoints;
+import com.cimadev.cimpleWaypointSystem.network.packets.waypoints.WaypointUpdate;
+import com.cimadev.cimpleWaypointSystem.network.utilities.AnnotatedPayload;
+import com.cimadev.cimpleWaypointSystem.network.utilities.Packet;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.util.Uuids;
+
+import java.util.ArrayList;
+import java.util.Map;
 
 import static net.minecraft.network.packet.CustomPayload.Id;
-import static com.cimadev.cimpleWaypointSystem.Main.MOD_ID;
 
 public abstract class PacketTypes {
-    public static final Id<ClientFeaturesPayload> CLIENT_FEATURES = id("client_features");
-
-    public static final Id<WaypointsPayload> WAYPOINTS = id("waypoints");
-    public static final Id<WaypointTeleport> TELEPORT = id("teleport");
-    public static final Id<WaypointUpdate> WAYPOINT_UPDATE = id("waypoint_update");
-
-    private static <T extends CustomPayload> Id<T> id(String name) {
-        return new Id<>(Identifier.of(MOD_ID, name));
-    }
+    public static final Map<Class<? extends AnnotatedPayload>, PacketCodec<RegistryByteBuf, ? extends AnnotatedPayload>> PACKET_TYPES = Map.of(
+            ClientHello.class,
+            PacketCodec.tuple(
+                    EnumSetPacketCodec.of(ChannelFlags.class), ClientHello::requestedChannels,
+                    ClientHello::new
+            ),
+            NewTeleportRequest.class,
+            PacketCodec.tuple(
+                    Uuids.PACKET_CODEC, NewTeleportRequest::from,
+                    Uuids.PACKET_CODEC, NewTeleportRequest::to,
+                    PacketCodecs.BOOL, NewTeleportRequest::isHere,
+                    NewTeleportRequest::new
+            ),
+            TeleportEvent.class,
+            PacketCodec.tuple(
+                    EnumCodec.of(TeleportEvent.Action.class), TeleportEvent::action,
+                    TeleportEvent::new
+            ),
+            AllWaypoints.class,
+            PacketCodec.tuple(
+                    PacketCodecs.collection(ArrayList::new, Waypoint.PACKET_CODEC), AllWaypoints::waypoints,
+                    AllWaypoints::new
+            ),
+            AccessibleWaypoints.class,
+            PacketCodec.tuple(
+                    PacketCodecs.collection(ArrayList::new, Waypoint.PACKET_CODEC), AccessibleWaypoints::waypoints,
+                    AccessibleWaypoints::new
+            ),
+            WaypointUpdate.class,
+            PacketCodec.tuple(
+                    WaypointKey.PACKET_CODEC, WaypointUpdate::key,
+                    NullableCodec.of(Waypoint.PACKET_CODEC), WaypointUpdate::waypoint,
+                    WaypointUpdate::new
+            )
+    );
 
     public static void register() {
-        ClientFeaturesPayload.register();
+        PACKET_TYPES.forEach(PacketTypes::registerClassUnsafe);
+    }
 
-        WaypointsPayload.register();
-        WaypointTeleport.register();
-        WaypointUpdate.register();
+    @SuppressWarnings("unchecked")
+    private static void registerClassUnsafe(
+            Class<? extends AnnotatedPayload> clazz,
+            PacketCodec<? super RegistryByteBuf, ? extends AnnotatedPayload> codec
+    ) {
+        registerClass((Class<AnnotatedPayload>)clazz, (PacketCodec<? super RegistryByteBuf, AnnotatedPayload>) codec);
+    }
+
+    private static <T extends AnnotatedPayload> void registerClass(Class<T> clazz, PacketCodec<? super RegistryByteBuf, T> codec) {
+        var annotation = clazz.getAnnotation(Packet.class);
+        if (annotation == null)
+            throw new IllegalStateException("Packet type " + clazz.getName() + " is not annotated with @Packet");
+        var id = AnnotatedPayload.getIdForClass(clazz);
+        for (var direction : annotation.directions()) {
+            switch (direction) {
+                case TO_CLIENT -> registerS2C(id, codec);
+                case TO_SERVER -> registerC2S(id, codec);
+            }
+        }
+    }
+
+    private static <T extends CustomPayload> void registerC2S(Id<T> id, PacketCodec<? super RegistryByteBuf, T> codec) {
+        PayloadTypeRegistry.playC2S().register(id, codec);
+    }
+
+    private static <T extends CustomPayload> void registerS2C(Id<T> id, PacketCodec<? super RegistryByteBuf, T> codec) {
+        PayloadTypeRegistry.playS2C().register(id, codec);
     }
 }

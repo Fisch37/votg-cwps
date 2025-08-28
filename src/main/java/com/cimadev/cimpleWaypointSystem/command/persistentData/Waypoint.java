@@ -2,6 +2,7 @@ package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
 import com.cimadev.cimpleWaypointSystem.command.TextProvider;
+import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.EnumCodec;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -28,7 +29,7 @@ public class Waypoint implements Comparable<Waypoint> {
             BlockPos.PACKET_CODEC, Waypoint::getPosition,
             RegistryKey.createPacketCodec(RegistryKeys.WORLD), Waypoint::getWorldRegKey,
             PacketCodecs.INTEGER, Waypoint::getYaw,
-            AccessLevel.PACKET_CODEC, Waypoint::getAccess,
+            EnumCodec.of(AccessLevel.class), Waypoint::getAccess,
             Waypoint::new
     );
 
@@ -72,7 +73,7 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     private void markDirty() {
-        networking.markDirty(this);
+
     }
 
     public void setName( String name ) {
