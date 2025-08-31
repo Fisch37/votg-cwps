@@ -10,15 +10,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Main implements ModInitializer {
-
     public static final String MOD_ID = "cimple-waypoint-system";
     public static final Logger LOGGER = LoggerFactory.getLogger("CWPS");
 
 
     public static ServerState serverState;
     public static Config config;
+    public static NetworkHandler handler;
     @Override
     public void onInitialize() {
+        handler = new NetworkHandler();
         config = Config.build();
         ModRegistries.registerAll();
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -28,5 +29,7 @@ public class Main implements ModInitializer {
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> serverState.setPlayer(handler.player));
         PacketTypes.register();
+
+        handler.registerReceivers();
     }
 }
