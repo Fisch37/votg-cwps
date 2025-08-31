@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import static com.cimadev.cimpleWaypointSystem.network.utilities.PacketDirection.TO_CLIENT;
 
 @Packet(id = "waypoint_update", directions = { TO_CLIENT })
-public record WaypointUpdate(WaypointKey key, @Nullable Waypoint waypoint) implements AnnotatedPayload {
+public record WaypointUpdate(WaypointKey key, @Nullable Waypoint waypoint, boolean accessible)
+        implements AnnotatedPayload {
 
 }

@@ -7,6 +7,7 @@ import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.EnumCodec;
 import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.EnumSetPacketCodec;
 import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.NullableCodec;
 import com.cimadev.cimpleWaypointSystem.network.packets.handshake.ClientHello;
+import com.cimadev.cimpleWaypointSystem.network.packets.handshake.ServerHello;
 import com.cimadev.cimpleWaypointSystem.network.packets.tpa.NewTeleportRequest;
 import com.cimadev.cimpleWaypointSystem.network.packets.tpa.TeleportEvent;
 import com.cimadev.cimpleWaypointSystem.network.packets.waypointAdmin.AllWaypoints;
@@ -27,11 +28,20 @@ import java.util.Map;
 import static net.minecraft.network.packet.CustomPayload.Id;
 
 public abstract class PacketTypes {
-    public static final Map<Class<? extends AnnotatedPayload>, PacketCodec<RegistryByteBuf, ? extends AnnotatedPayload>> PACKET_TYPES = Map.of(
+    public static final Map<Class<? extends AnnotatedPayload>, PacketCodec<RegistryByteBuf, ? extends AnnotatedPayload>>
+        PACKET_TYPES = Map.of(
             ClientHello.class,
             PacketCodec.tuple(
                     EnumSetPacketCodec.of(ChannelFlags.class), ClientHello::requestedChannels,
                     ClientHello::new
+            ),
+            ServerHello.class,
+            PacketCodec.tuple(
+                    PacketCodecs.optional(PacketCodecs.collection(ArrayList::new, Waypoint.PACKET_CODEC)),
+                    ServerHello::accessibleWaypoints,
+                    PacketCodecs.optional(PacketCodecs.collection(ArrayList::new, Waypoint.PACKET_CODEC)),
+                    ServerHello::allWaypoints,
+                    ServerHello::new
             ),
             NewTeleportRequest.class,
             PacketCodec.tuple(
@@ -42,6 +52,7 @@ public abstract class PacketTypes {
             ),
             TeleportEvent.class,
             PacketCodec.tuple(
+                    Uuids.PACKET_CODEC, TeleportEvent::target,
                     EnumCodec.of(TeleportEvent.Action.class), TeleportEvent::action,
                     TeleportEvent::new
             ),
@@ -59,6 +70,7 @@ public abstract class PacketTypes {
             PacketCodec.tuple(
                     WaypointKey.PACKET_CODEC, WaypointUpdate::key,
                     NullableCodec.of(Waypoint.PACKET_CODEC), WaypointUpdate::waypoint,
+                    PacketCodecs.BOOL, WaypointUpdate::accessible,
                     WaypointUpdate::new
             )
     );
