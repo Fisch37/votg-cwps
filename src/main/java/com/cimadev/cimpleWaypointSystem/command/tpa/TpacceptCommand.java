@@ -1,6 +1,7 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TPAManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -29,14 +30,6 @@ public class TpacceptCommand {
     }
 
     private static int acceptTeleport(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        TeleportRequest request = TeleportRequestManager.getInstance().removeRequest(
-                context.getSource().getPlayerOrThrow()
-        );
-        if (request == null) {
-            context.getSource().sendFeedback(() -> NO_TPA_ERROR_MESSAGE, false);
-            return 0;
-        }
-        request.perform();
-        return 1;
+        return TPAManager.getInstance().acceptTeleport(context.getSource().getPlayerOrThrow()) ? 1 : 0;
     }
 }

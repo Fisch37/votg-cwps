@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.command.tpa;
+package com.cimadev.cimpleWaypointSystem.command.tpa.logic;
 
 import de.fisch37.datastructures.mi.MINode;
 import net.minecraft.entity.player.PlayerEntity;

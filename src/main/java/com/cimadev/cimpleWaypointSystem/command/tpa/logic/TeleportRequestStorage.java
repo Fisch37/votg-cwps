@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.command.tpa;
+package com.cimadev.cimpleWaypointSystem.command.tpa.logic;
 
 import de.fisch37.datastructures.mi.MIQueue;
 import net.minecraft.entity.player.PlayerEntity;
@@ -6,13 +6,13 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 
-public class TeleportRequestManager {
+public class TeleportRequestStorage {
     private final HashMap<PlayerEntity, TeleportRequest> playerToRequest, originToRequest;
     private final MIQueue<TeleportRequest> requests;
-    private final static TeleportRequestManager SINGLETON = new TeleportRequestManager();
+    private final static TeleportRequestStorage SINGLETON = new TeleportRequestStorage();
     private long currentTick = 0;
 
-    protected TeleportRequestManager() {
+    protected TeleportRequestStorage() {
         this.playerToRequest = new HashMap<>();
         this.originToRequest = new HashMap<>();
         this.requests = new MIQueue<>();
@@ -70,7 +70,7 @@ public class TeleportRequestManager {
         return 2*60*20;
     }
 
-    public static TeleportRequestManager getInstance() {
+    public static TeleportRequestStorage getInstance() {
         return SINGLETON;
     }
 }

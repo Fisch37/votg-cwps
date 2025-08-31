@@ -1,6 +1,7 @@
 package com.cimadev.cimpleWaypointSystem;
 
 import com.cimadev.cimpleWaypointSystem.command.persistentData.ServerState;
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TPAManager;
 import com.cimadev.cimpleWaypointSystem.network.PacketTypes;
 import com.cimadev.cimpleWaypointSystem.registry.ModRegistries;
 import net.fabricmc.api.ModInitializer;
@@ -25,6 +26,7 @@ public class Main implements ModInitializer {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             System.out.println("Initializing server state!");
             serverState = ServerState.getServerState(server);
+            TPAManager.getInstance().setServer(server);
         });
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> serverState.setPlayer(handler.player));

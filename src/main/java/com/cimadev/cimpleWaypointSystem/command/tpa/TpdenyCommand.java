@@ -1,14 +1,13 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TPAManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
@@ -33,23 +32,6 @@ public class TpdenyCommand {
     }
 
     public static int denyTeleport(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
-        TeleportRequest request = TeleportRequestManager.getInstance().removeRequest(player);
-        if (request == null) {
-            player.sendMessage(NO_TPA_ERROR);
-            return 0;
-        }
-        PlayerEntity origin = request.getOrigin();
-        player.sendMessage(
-                Text.literal("The teleport request from ")
-                        .append(origin.getName().copy().formatted(Colors.PLAYER))
-                        .append(" has been denied!")
-                        .formatted(Colors.DEFAULT)
-        );
-        origin.sendMessage(
-                player.getName().copy().formatted(Colors.PLAYER)
-                .append(Text.literal(" has denied your teleport request").formatted(Formatting.RED))
-        );
-        return 1;
+        return TPAManager.getInstance().denyTeleport(context.getSource().getPlayerOrThrow()) ? 1 : 0;
     }
 }
