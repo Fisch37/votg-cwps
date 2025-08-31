@@ -360,8 +360,10 @@ public class WpsCommand {
         Waypoint newWaypoint = new Waypoint(name, blockPos, yaw, world.getRegistryKey(), owner, access);
         Waypoint oldWaypoint = Main.serverState.getWaypoint(newWaypoint.getKey());
         if ( oldWaypoint == null ) {
+            Main.handler.sendWaypointUpdate(newWaypoint.getKey(), newWaypoint);
             messageText = () -> wpsAdd(newWaypoint);
         } else if ( moveIfExists ) {
+            Main.handler.sendWaypointUpdate(newWaypoint.getKey(), newWaypoint);
             messageText = TextProvider.waypointMoveSuccess(
                     newWaypoint,
                     oldWaypoint.getPosition(),
@@ -440,6 +442,7 @@ public class WpsCommand {
 
         Waypoint waypoint = new Waypoint(name, pos, yaw, world, owner, accessLevel);
         serverState.setWaypoint(waypoint);
+        Main.handler.sendWaypointUpdate(waypoint.getKey(), waypoint);
 
         source.sendFeedback(
                 () -> Text.literal("Created new waypoint ")
@@ -601,6 +604,7 @@ public class WpsCommand {
         } else {
             Text waypointNameFormatted = waypoint.getNameFormatted();
             Main.serverState.removeWaypoint(waypoint.getKey());
+            Main.handler.sendWaypointUpdate(waypoint.getKey(), null);
             Main.serverState.markDirty();
             MutableText message = Text.literal("")
                     .append(ownerTitle);
@@ -694,10 +698,12 @@ public class WpsCommand {
                     .append(Text.literal(" could not be found."))
                     .formatted(Colors.DEFAULT);
         } else {
-            Main.serverState.removeWaypoint(waypoint.getKey());
+            WaypointKey key = waypoint.getKey();
+            Main.serverState.removeWaypoint(key);
             oldName = waypoint.getName();
             waypoint.rename(newName);
             Main.serverState.setWaypoint( waypoint );
+            handler.sendWaypointUpdate(key, waypoint);
             String finalOldName = oldName;
             MutableText message = Text.literal("Your waypoint ");
             if ( ownerUuid != null ) message.append(Text.literal(finalOldName).formatted(Colors.LINK_INACTIVE));
@@ -738,6 +744,7 @@ public class WpsCommand {
                     TextProvider.waypointMoveSuccess(waypoint, oldPos, oldDim, waypoint.getAccess()),
                     false
             );
+            Main.handler.sendWaypointUpdate(waypoint.getKey(), waypoint);
             return 1;
         }
     }
