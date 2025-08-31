@@ -17,9 +17,12 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayNetworkHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.cimadev.cimpleWaypointSystem.Main.serverState;
 
@@ -45,12 +48,51 @@ public class NetworkHandler {
             );
     }
 
-    public void sendWaypointUpdate(WaypointKey key, @Nullable Waypoint waypoint) {
+    public void sendWaypointAddedOrMoved(@NotNull Waypoint waypoint) {
+        sendWaypointRenamed(waypoint.getKey(), waypoint);
+    }
+
+    public void sendWaypointRenamed(@NotNull WaypointKey oldKey, @NotNull Waypoint waypoint) {
+        final var predicate = makeAccessPredicate(waypoint);
+        sendWaypointUpdate(
+                predicate,
+                p -> true,
+                player -> new WaypointUpdate(
+                        oldKey, waypoint,
+                        predicate.test(player)
+                )
+        );
+    }
+
+    public void sendWaypointRemoved(@NotNull Waypoint waypoint) {
+        sendWaypointAccessChanged(waypoint, null);
+    }
+
+    public void sendWaypointAccessChanged(@NotNull Waypoint old, @Nullable Waypoint newWaypoint) {
+        final var predicate = makeAccessPredicate(old)
+                .or(newWaypoint == null ? (p -> false) : makeAccessPredicate(newWaypoint));
+        sendWaypointUpdate(
+                predicate,
+                p -> true,
+                player -> new WaypointUpdate(
+                        old.getKey(), newWaypoint,
+                        predicate.test(player)
+                )
+        );
+    }
+
+    private void sendWaypointUpdate(
+            Predicate<ServerPlayerEntity> predicate, Predicate<ServerPlayerEntity> allPredicate,
+            Function<ServerPlayerEntity, WaypointUpdate> function
+    ) {
         for (WaypointWatcher watcher : waypointWatchers) {
-            boolean accessible = serverState.waypointAccess(waypoint, watcher.player);
-            if (watcher.all || accessible)
-                ServerPlayNetworking.send(watcher.player, new WaypointUpdate(key, waypoint, accessible));
+            if ((watcher.all ? allPredicate : predicate).test(watcher.player))
+                ServerPlayNetworking.send(watcher.player, function.apply(watcher.player));
         }
+    }
+
+    private Predicate<ServerPlayerEntity> makeAccessPredicate(@NotNull Waypoint waypoint) {
+        return player -> serverState.waypointAccess(waypoint, player);
     }
 
     private void onDisconnect(ServerPlayNetworkHandler handler, MinecraftServer server) {

@@ -360,10 +360,10 @@ public class WpsCommand {
         Waypoint newWaypoint = new Waypoint(name, blockPos, yaw, world.getRegistryKey(), owner, access);
         Waypoint oldWaypoint = Main.serverState.getWaypoint(newWaypoint.getKey());
         if ( oldWaypoint == null ) {
-            Main.handler.sendWaypointUpdate(newWaypoint.getKey(), newWaypoint);
+            Main.handler.sendWaypointAddedOrMoved(newWaypoint);
             messageText = () -> wpsAdd(newWaypoint);
         } else if ( moveIfExists ) {
-            Main.handler.sendWaypointUpdate(newWaypoint.getKey(), newWaypoint);
+            Main.handler.sendWaypointAddedOrMoved(newWaypoint);
             messageText = TextProvider.waypointMoveSuccess(
                     newWaypoint,
                     oldWaypoint.getPosition(),
@@ -440,9 +440,13 @@ public class WpsCommand {
                     .getRegistryKey();
         } catch (IllegalArgumentException e) { }
 
+        @Nullable Waypoint oldWaypoint = serverState.getWaypoint(new WaypointKey(owner, name));
         Waypoint waypoint = new Waypoint(name, pos, yaw, world, owner, accessLevel);
         serverState.setWaypoint(waypoint);
-        Main.handler.sendWaypointUpdate(waypoint.getKey(), waypoint);
+        if (oldWaypoint == null)
+            handler.sendWaypointAddedOrMoved(waypoint);
+        else
+            handler.sendWaypointAccessChanged(oldWaypoint, waypoint);
 
         source.sendFeedback(
                 () -> Text.literal("Created new waypoint ")
@@ -604,7 +608,7 @@ public class WpsCommand {
         } else {
             Text waypointNameFormatted = waypoint.getNameFormatted();
             Main.serverState.removeWaypoint(waypoint.getKey());
-            Main.handler.sendWaypointUpdate(waypoint.getKey(), null);
+            Main.handler.sendWaypointRemoved(waypoint);
             Main.serverState.markDirty();
             MutableText message = Text.literal("")
                     .append(ownerTitle);
@@ -703,7 +707,7 @@ public class WpsCommand {
             oldName = waypoint.getName();
             waypoint.rename(newName);
             Main.serverState.setWaypoint( waypoint );
-            handler.sendWaypointUpdate(key, waypoint);
+            handler.sendWaypointRenamed(key, waypoint);
             String finalOldName = oldName;
             MutableText message = Text.literal("Your waypoint ");
             if ( ownerUuid != null ) message.append(Text.literal(finalOldName).formatted(Colors.LINK_INACTIVE));
@@ -744,7 +748,7 @@ public class WpsCommand {
                     TextProvider.waypointMoveSuccess(waypoint, oldPos, oldDim, waypoint.getAccess()),
                     false
             );
-            Main.handler.sendWaypointUpdate(waypoint.getKey(), waypoint);
+            Main.handler.sendWaypointAddedOrMoved(waypoint);
             return 1;
         }
     }
