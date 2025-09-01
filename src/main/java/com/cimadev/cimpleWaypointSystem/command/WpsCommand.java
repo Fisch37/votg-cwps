@@ -703,11 +703,12 @@ public class WpsCommand {
                     .formatted(Colors.DEFAULT);
         } else {
             WaypointKey key = waypoint.getKey();
+            WaypointKey keyCopy = new WaypointKey(key);
             Main.serverState.removeWaypoint(key);
             oldName = waypoint.getName();
             waypoint.rename(newName);
             Main.serverState.setWaypoint( waypoint );
-            handler.sendWaypointRenamed(key, waypoint);
+            handler.sendWaypointRenamed(keyCopy, waypoint);
             String finalOldName = oldName;
             MutableText message = Text.literal("Your waypoint ");
             if ( ownerUuid != null ) message.append(Text.literal(finalOldName).formatted(Colors.LINK_INACTIVE));

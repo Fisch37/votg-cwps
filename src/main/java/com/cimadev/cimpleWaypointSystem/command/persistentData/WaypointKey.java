@@ -40,6 +40,11 @@ public class WaypointKey implements Comparable<WaypointKey> {
         this.name = name;
     }
 
+    public WaypointKey(WaypointKey key) {
+        this.owner = key.owner;
+        this.name = key.name;
+    }
+
     public WaypointKey(@Nullable UUID owner, String name) {
         this.owner = owner;
         this.name = name;
