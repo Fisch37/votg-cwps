@@ -1,6 +1,7 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
-import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TPAManager;
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TeleportRequest;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -10,7 +11,7 @@ import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.*;
+import net.minecraft.text.Text;
 
 public class TphereCommand {
     public static final SimpleCommandExceptionType SELF_TELEPORT_EXC = new SimpleCommandExceptionType(
@@ -35,18 +36,6 @@ public class TphereCommand {
             throw SELF_TELEPORT_EXC.create();
         }
         final TeleportRequest request = new TeleportRequest(origin, target, true);
-        if (TpaMessages.handleDuplicateAndBusy(request))
-            return 0;
-        TeleportRequestManager.getInstance().addRequest(request);
-        TpaMessages.sendRequestMessages(request);
-        context.getSource().sendFeedback(() ->
-                Text.literal("")
-                        .append(target.getName().copy().formatted(Colors.PLAYER))
-                        .append(" has received your teleport request!")
-                        .formatted(Colors.DEFAULT)
-                ,
-                false
-        );
-        return 1;
+        return TPAManager.getInstance().requestTeleport(request) ? 1 : 0;
     }
 }

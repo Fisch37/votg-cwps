@@ -1,6 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
-import com.cimadev.cimpleWaypointSystem.network.NullableCodec;
+import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.NullableCodec;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -14,9 +14,9 @@ import java.util.UUID;
 
 public class WaypointKey implements Comparable<WaypointKey> {
     public static final PacketCodec<RegistryByteBuf, WaypointKey> PACKET_CODEC = PacketCodec.tuple(
-            new NullableCodec<>(Uuids.PACKET_CODEC), WaypointKey::getOwner,
+            NullableCodec.of(Uuids.PACKET_CODEC), WaypointKey::getOwner,
             PacketCodecs.STRING, WaypointKey::getName,
-            new NullableCodec<>(PacketCodecs.STRING), WaypointKey::getOwnerName,
+            NullableCodec.of(PacketCodecs.STRING), WaypointKey::getOwnerName,
             (uuid, name, ownerName) -> new WaypointKey(uuid, name)
     );
 
@@ -38,6 +38,11 @@ public class WaypointKey implements Comparable<WaypointKey> {
 
     public void setName( String name ) {
         this.name = name;
+    }
+
+    public WaypointKey(WaypointKey key) {
+        this.owner = key.owner;
+        this.name = key.name;
     }
 
     public WaypointKey(@Nullable UUID owner, String name) {

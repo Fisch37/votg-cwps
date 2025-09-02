@@ -1,6 +1,8 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.command.TextProvider;
+import com.cimadev.cimpleWaypointSystem.network.codecs.primitives.EnumCodec;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.RegistryByteBuf;
 import net.minecraft.network.codec.PacketCodec;
@@ -27,7 +29,7 @@ public class Waypoint implements Comparable<Waypoint> {
             BlockPos.PACKET_CODEC, Waypoint::getPosition,
             RegistryKey.createPacketCodec(RegistryKeys.WORLD), Waypoint::getWorldRegKey,
             PacketCodecs.INTEGER, Waypoint::getYaw,
-            AccessLevel.PACKET_CODEC, Waypoint::getAccess,
+            EnumCodec.of(AccessLevel.class), Waypoint::getAccess,
             Waypoint::new
     );
 
@@ -70,27 +72,35 @@ public class Waypoint implements Comparable<Waypoint> {
         return worldRegKey;
     }
 
-    public void setName( String name ) {
-        this.key.setName(name);
+    private void markDirty() {
+
     }
 
+    public void setName( String name ) {
+        this.key.setName(name);
+        markDirty();
+    }
 
     public void rename( String name ) {
         setName( name );
+        markDirty();
     }
 
     public void setPosition( BlockPos position ) {
         this.position = position;
+        markDirty();
     }
 
     public void setYaw( int yaw ) {
         this.yaw = yaw;
+        markDirty();
     }
 
     public void setAccess( AccessLevel access ) {
         if ( access != AccessLevel.OPEN ) {
             this.access = access;
         }
+        markDirty();
     }
 
     public AccessLevel getAccess() {
@@ -102,14 +112,7 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public Text getNameFormatted() {
-        HoverEvent waypointTooltip = new HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                Text.literal(
-                        position.getX()
-                                + " " + position.getY()
-                                + " " + position.getZ()
-                                + " in " + worldRegKey.getValue().toString()
-                ));
+        HoverEvent waypointTooltip = TextProvider.getPositionTooltip(position, worldRegKey);
         ClickEvent waypointCommand;
         try {
             waypointCommand = new ClickEvent(

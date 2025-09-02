@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.command.tpa;
+package com.cimadev.cimpleWaypointSystem.command.tpa.logic;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
 import net.minecraft.entity.player.PlayerEntity;
@@ -32,11 +32,11 @@ public class TpaMessages {
     }
 
     public static boolean handleDuplicateAndBusy(TeleportRequest request) {
-        if (TeleportRequestManager.getInstance().hasRequest(request.getTarget())) {
+        if (TeleportRequestStorage.getInstance().hasRequest(request.getTarget())) {
             sendBusyTargetError(request);
             return true;
         }
-        if (TeleportRequestManager.getInstance().hasOpenRequest(request.getOrigin())) {
+        if (TeleportRequestStorage.getInstance().hasOpenRequest(request.getOrigin())) {
             sendDuplicateRequestError(request.getOrigin());
             return true;
         }
@@ -55,7 +55,7 @@ public class TpaMessages {
                 .append(" to accept or ")
                 .append(literalCommand("/tpdeny", "Click to deny").formatted(Formatting.RED))
                 .append(" to deny it. The request expires in ")
-                .append(Text.literal(Long.toString(TeleportRequestManager.getInstance().getRequestTTL()))
+                .append(Text.literal(Long.toString(TeleportRequestStorage.getInstance().getRequestTTL()))
                         .append(" seconds.")
                         .formatted(Colors.TIME)
                 )

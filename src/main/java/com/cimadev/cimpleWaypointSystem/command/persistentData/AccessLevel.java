@@ -5,24 +5,17 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
-import static com.cimadev.cimpleWaypointSystem.Main.*;
+import static com.cimadev.cimpleWaypointSystem.Main.config;
 
 public enum AccessLevel {
     SECRET("secret", Colors.SECRET),
     PRIVATE("private", Colors.PRIVATE),
     PUBLIC("public", Colors.PUBLIC),
     OPEN("open", Colors.OPEN);
-
-    public static final PacketCodec<RegistryByteBuf, AccessLevel> PACKET_CODEC = PacketCodec.of(
-            (val, buf) -> buf.writeByte(val.ordinal()),
-            buf -> AccessLevel.values()[buf.readByte()]
-    );
 
     private final String name;
     private final Text nameFormatted;

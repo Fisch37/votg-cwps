@@ -1,5 +1,7 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TPAManager;
+import com.cimadev.cimpleWaypointSystem.command.tpa.logic.TeleportRequest;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -32,11 +34,6 @@ public class TpaCommand {
         ServerPlayerEntity target = entity.getPlayer(context.getSource());
 
         final TeleportRequest request = new TeleportRequest(origin, target, false);
-        if (TpaMessages.handleDuplicateAndBusy(request))
-            return 0;
-        TeleportRequestManager.getInstance().addRequest(request);
-        TpaMessages.sendRequestMessages(request);
-
-        return 1;
+        return TPAManager.getInstance().requestTeleport(request) ? 1 : 0;
     }
 }

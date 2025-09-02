@@ -7,15 +7,24 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.network.RegistryByteBuf;
+import net.minecraft.network.codec.PacketCodec;
+import net.minecraft.network.codec.PacketCodecs;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.Uuids;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.UUID;
+import java.util.*;
 
 
 public class OfflinePlayer implements Comparable<OfflinePlayer> {
 
+    public static final PacketCodec<RegistryByteBuf, OfflinePlayer> PACKET_CODEC_LIMITED = PacketCodec.tuple(
+            Uuids.PACKET_CODEC, OfflinePlayer::getUuid,
+            PacketCodecs.STRING, OfflinePlayer::getName,
+            OfflinePlayer::new
+    );
     public static final DynamicCommandExceptionType INVALID_PLAYER_NAME = new DynamicCommandExceptionType(
             /*todo: change to PLAYER_COLOR*/
             o -> Text.literal("Player ").append( Text.literal( o+"" ).formatted(Colors.LINK_INACTIVE) )

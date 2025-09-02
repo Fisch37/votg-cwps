@@ -24,7 +24,6 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
@@ -132,6 +131,25 @@ public class WpsCommand {
                                 .then(CommandManager.argument("access", word())
                                         .suggests(accessSuggestionsAdminsOpen)
                                         .executes(WpsCommand::wpsAddMine)
+                )))
+                .then(CommandManager.literal("move")
+                        .then(CommandManager.argument("name", string())
+                                .suggests(waypointSuggestionsOnlySelf)
+                                .executes(context -> wpsMove(
+                                        context,
+                                        OfflinePlayer.fromUuid(context.getSource().getPlayerOrThrow().getUuid())
+                                ))
+                                .then(CommandManager.literal("open")
+                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .executes(context -> wpsMove(context, null))
+                                )
+                                .then(CommandManager.argument("owner", word())
+                                        .suggests(new OfflinePlayerSuggestionProvider())
+                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .executes(context -> wpsMove(
+                                                context,
+                                                OfflinePlayer.fromContext(context, "owner")
+                                        ))
                 )))
                 .then(CommandManager.literal("set")
                         .requires(source -> source.hasPermissionLevel(3))
@@ -291,13 +309,6 @@ public class WpsCommand {
 
         UUID ownerUuid = owner == null ? null : owner.getUuid();
         Waypoint waypoint = Main.serverState.getWaypoint(new WaypointKey(ownerUuid, name));
-        String ownerName;
-        if (owner != null) {
-            if (ownerUuid.equals(player.getUuid())) ownerName = "your ";
-            else ownerName = owner.getName() + "'s ";
-        } else {
-            ownerName = "";
-        }
 
         if (waypoint != null && Main.serverState.waypointAccess(waypoint, player)) {
             Vec3d wpPos = waypoint.getPosition().toBottomCenterPos();
@@ -306,19 +317,9 @@ public class WpsCommand {
             int yaw = waypoint.getYaw();
             player.teleport(world, wpPos.getX(), wpPos.getY(), wpPos.getZ(), yaw, 0);
 
-            messageText = () -> Text.literal("Teleported to ")
-                    .append(Text.literal(ownerName).formatted(Colors.PLAYER))
-                    .append(waypoint.getAccessFormatted())
-                    .append(Text.literal(" waypoint "))
-                    .append(waypoint.getNameFormatted())
-                    .append(Text.literal("."))
-                    .formatted(Colors.DEFAULT);
+            messageText = TextProvider.waypointTeleportSuccess(player, waypoint);
         } else {
-            messageText = () -> Text.literal(ownerName).formatted(Colors.PLAYER)
-                    .append(Text.literal(" waypoint "))
-                    .append(Text.literal( name ).formatted(Colors.LINK_INACTIVE))
-                    .append(Text.literal(" could not be found."))
-                    .formatted(Colors.DEFAULT);
+            messageText = TextProvider.noWaypointFound(owner, name, player);
         }
 
         commandSource.sendFeedback(messageText, false);
@@ -359,9 +360,16 @@ public class WpsCommand {
         Waypoint newWaypoint = new Waypoint(name, blockPos, yaw, world.getRegistryKey(), owner, access);
         Waypoint oldWaypoint = Main.serverState.getWaypoint(newWaypoint.getKey());
         if ( oldWaypoint == null ) {
+            Main.handler.sendWaypointAddedOrMoved(newWaypoint);
             messageText = () -> wpsAdd(newWaypoint);
         } else if ( moveIfExists ) {
-            messageText = () -> wpsMove(oldWaypoint, newWaypoint);
+            Main.handler.sendWaypointAddedOrMoved(newWaypoint);
+            messageText = TextProvider.waypointMoveSuccess(
+                    newWaypoint,
+                    oldWaypoint.getPosition(),
+                    oldWaypoint.getWorldRegKey(),
+                    oldWaypoint.getAccess()
+            );
         } else {
             messageText = () -> Text.literal("Your ")
                     .append(oldWaypoint.getAccessFormatted())
@@ -383,37 +391,6 @@ public class WpsCommand {
                 .append(newWaypoint.getNameFormatted())
                 .append(".")
                 .formatted(Colors.DEFAULT);
-    }
-
-    private static MutableText wpsMove(Waypoint oldWaypoint, Waypoint newWaypoint) {
-        BlockPos nwp = newWaypoint.getPosition();
-        AccessLevel access = newWaypoint.getAccess();
-        BlockPos owp = oldWaypoint.getPosition();
-        oldWaypoint.setPosition(nwp);
-        oldWaypoint.setYaw(newWaypoint.getYaw());
-        oldWaypoint.setAccess(access);
-
-        HoverEvent movedTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(" Formerly at x: "  + owp.getX() + ", y: " + owp.getY() + ", z: " + owp.getZ()));
-        MutableText moved = Text.literal("Moved").formatted(Formatting.UNDERLINE);
-        Style waypointStyle = moved.getStyle();
-        moved.setStyle(waypointStyle.withHoverEvent(movedTooltip));
-        Text oldAccess = oldWaypoint.getAccessFormatted();
-
-        MutableText message = Text.literal("")
-                .append(moved);
-        if (access == AccessLevel.OPEN) message.append(" the ").append(access.getNameFormatted());
-        else message.append(" your ").append(oldAccess);
-        message.append(" waypoint ")
-                .append(newWaypoint.getNameFormatted())
-                .append(".")
-                .formatted(Colors.DEFAULT);
-        if ( oldWaypoint.getAccess() != access ) {
-            message.append(" It is now ")
-                    .append(newWaypoint.getAccessFormatted())
-                    .append(".")
-                    .formatted(Colors.DEFAULT);
-        }
-        return message;
     }
 
     private static int wpsSetOpen(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
@@ -463,8 +440,13 @@ public class WpsCommand {
                     .getRegistryKey();
         } catch (IllegalArgumentException e) { }
 
+        @Nullable Waypoint oldWaypoint = serverState.getWaypoint(new WaypointKey(owner, name));
         Waypoint waypoint = new Waypoint(name, pos, yaw, world, owner, accessLevel);
         serverState.setWaypoint(waypoint);
+        if (oldWaypoint == null)
+            handler.sendWaypointAddedOrMoved(waypoint);
+        else
+            handler.sendWaypointAccessChanged(oldWaypoint, waypoint);
 
         source.sendFeedback(
                 () -> Text.literal("Created new waypoint ")
@@ -626,6 +608,7 @@ public class WpsCommand {
         } else {
             Text waypointNameFormatted = waypoint.getNameFormatted();
             Main.serverState.removeWaypoint(waypoint.getKey());
+            Main.handler.sendWaypointRemoved(waypoint);
             Main.serverState.markDirty();
             MutableText message = Text.literal("")
                     .append(ownerTitle);
@@ -697,7 +680,8 @@ public class WpsCommand {
         return wpsRename(context, waypoint, oldName, newName, false);
     }
 
-    private static int wpsRename(CommandContext<ServerCommandSource> context, Waypoint waypoint, String oldName, String newName, boolean ownedByCaller) throws CommandSyntaxException {
+    private static int wpsRename(
+            CommandContext<ServerCommandSource> context, Waypoint waypoint, String oldName, String newName, boolean ownedByCaller) throws CommandSyntaxException {
         Supplier<Text> messageText;
 
         MutableText ownerTitle;
@@ -718,10 +702,13 @@ public class WpsCommand {
                     .append(Text.literal(" could not be found."))
                     .formatted(Colors.DEFAULT);
         } else {
-            Main.serverState.removeWaypoint(waypoint.getKey());
+            WaypointKey key = waypoint.getKey();
+            WaypointKey keyCopy = new WaypointKey(key);
+            Main.serverState.removeWaypoint(key);
             oldName = waypoint.getName();
             waypoint.rename(newName);
             Main.serverState.setWaypoint( waypoint );
+            handler.sendWaypointRenamed(keyCopy, waypoint);
             String finalOldName = oldName;
             MutableText message = Text.literal("Your waypoint ");
             if ( ownerUuid != null ) message.append(Text.literal(finalOldName).formatted(Colors.LINK_INACTIVE));
@@ -735,6 +722,36 @@ public class WpsCommand {
 
         context.getSource().sendFeedback(messageText, false);
         return 1;
+    }
+
+    private static int wpsMove(
+            CommandContext<ServerCommandSource> context,
+            @Nullable OfflinePlayer owner
+    ) throws CommandSyntaxException {
+        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+        String waypointName = StringArgumentType.getString(context, "name");
+        Waypoint waypoint = serverState.getWaypoint(new WaypointKey(
+                owner == null ? null : owner.getUuid(),
+                waypointName
+        ));
+        if (waypoint == null) {
+            context.getSource().sendFeedback(
+                    TextProvider.noWaypointFound(owner, waypointName, player),
+                    false
+            );
+            return 0;
+        } else {
+            // toImmutable is a safety because we cannot rely on a BlockPos being immutable by default >:(
+            BlockPos oldPos = waypoint.getPosition().toImmutable();
+            RegistryKey<World> oldDim = waypoint.getWorldRegKey();
+            waypoint.setPosition(player.getBlockPos());
+            context.getSource().sendFeedback(
+                    TextProvider.waypointMoveSuccess(waypoint, oldPos, oldDim, waypoint.getAccess()),
+                    false
+            );
+            Main.handler.sendWaypointAddedOrMoved(waypoint);
+            return 1;
+        }
     }
 
     private static int wpsSetHome(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
