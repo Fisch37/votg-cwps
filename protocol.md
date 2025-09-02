@@ -1,59 +1,66 @@
 # Network Protocol
-## Preface
-The data protocol for this project should have no problems dealing 
-with multiple instances of the communication library on the same client.
-Any changes should be kept as backward compatible as possible, 
-but if an incompatibility exists, the library should be able to detect
-it before any problems can arise.
+## Handshake
+When a client running any version of [cwps-netlib](https://github.com/Fisch37/cwps-netlib) connects to a server,
+it sends a `ClientHello` packet declaring which types of communications it is interested in.
+These dictate solely what packets the server should send unprovoked (i.e. as a notify packet) and servers may receive
+packets of any packet type and handle them without errors.
+(Though they may opt to do nothing, if the client does not have the correct privileges for a packet.)
 
-The network protocol shall be embeddable as a library into other mods and not be installable as its own mod.
-This means multiple versions of the library may be communicating over one connection.
-An individual embedded library that starts with its own runtime shall henceforth be referred to as an "instance".
+If the server does not support the networking protocol, it shall not send any further messages and the client should
+consider this a handshake failure. 
+If the server does support the protocol, it shall send a `ServerHello` packet, 
+containing any information about the server state that the client is 1) entitled to receive, 
+and 2) has requested via the `ChannelFlags`s set in its `ClientHello` packet.
 
-The protocol shall be designed to allow for arbitrarily many instances to communicate over one connection 
-and each instance must decide whether to propagate a received packet to its host mod.
-
-## Negotiation Packets
-### Server Protocol version
 ```java
-record ServerProtocolVersion (
-    int majorVersion,
-    int minorVersion
+import java.util.SortedMap;
+
+record ClientHello(EnumSet<ChannelFlag> channels) { }
+
+record ServerHello(
+        Optional<List<Waypoint>> accessibleWaypoints,
+        Optional<List<Waypoint>> allWaypoints
 ) { }
 ```
 
-On connection the server sends a packet with the major and minor version of its protocol.
-The library should then compare this information to its own version information.
-Further communication from this instance of the library should _only_
-occur if 1. the major versions are identical, and 2. the minor version of the client is 
-less than or equal to the server's minor version.
+- `ServerHello.accessibleWaypoints` is `Optional.empty()` if `ChannelFlags.WAYPOINTS` was not set in `ClientHello`, 
+    otherwise it is an `Optional.of` with a list of all waypoints accessible to the user, 
+    assuming they are not an admin.
+- `ServerHello.allWaypoints` is `Optional.empty()` if `ChannelFlags.WAYPOINTS_ADMIN` was not set or the player does not
+    have admin permission (in regard to waypoints), else it is an `Optional.of` 
+    with a list of all waypoints on the server.
 
-This negotiation is deliberately over-protective. 
-A major version change may not mean an incompatibility exists with any of the features requested 
-by this instance (see below), but regardless, no further handling of packets should occur by this instance 
-and an error notice should appear.
-
-### Requested Notifications
+## Waypoints
 ```java
-record RequestedNotifications(
-    EnumSet<ChannelFlag> channelFlags
+record WaypointUpdate(
+        WaypointKey key, @Nullable Waypoint waypoint,
+        boolean accessible
 ) { }
 ```
-Once the instance has confirmed its compatibility, it shall send a packet signalling 
-which channels it would like to be notified over. The server will send information on a channel if 1.
-the client is permitted to receive information on this channel, and 2. any of the RequestedNotifications
-packets it has received during this session from this client have set its channel flag.
+If either `ChannelFlags.WAYPOINTS` or `ChannelFlags.WAYPOINTS_ADMIN` are set for the client,
+the server shall send a `WaypointUpdate` packet whenever a waypoint visible to the client as a result of either
+`WAYPOINTS` or `WAYPOINTS_ADMIN` is added, renamed, changed, or removed.
 
-Instances should only propagate notifications to their host mod that have been requested through that instance.
+`WaypointUpdate.key` and `WaypointUpdate.waypoint` behave in the following way to define the update that occurred:
+- `waypoint == null`: The waypoint `key` has been removed.
+- `waypoint != null && key.equals(waypoint.key)`: A normal update occurred.
+    `accessible` may be false only if `ServerHello.allWaypoints` is not empty.
+- `waypoint != null && !key.equals(key != waypoint.key)` The waypoint `key` has been renamed to `waypoint.key`
 
-#### Channels
+The packets `AllWaypoints` and `AccessibleWaypoints` exist, but remain unused.
+
+## Teleport Requests
 ```java
-enum ChannelFlag {
-    WAYPOINTS,
-    ADMIN_WAYPOINTS,
+record NewTeleportRequest(UUID from, UUID to, boolean isHere) { }
+record TeleportEvent(UUID target, Action action) {
+    enum Action { ACCEPT, DENY, CANCEL }
 }
 ```
-- **WAYPOINTS**: Sends a list of all waypoints visible for that player when this flag is first set.
-    Subsequently sends update packets whenever that list changes (add, remove, visibility)
-- **ADMIN_WAYPOINTS**: Sends a list of all waypoints whether normally visible or not and corresponding change packets.
-    Should send different packets than WAYPOINTS.
+When a `tpa` or `tphere` occurs and the client has sent the `TELEPORT_REQUESTS` flag,
+the server shall send a `NewTeleportRequest` packet. `to` will always be the UUID of the client.
+`isHere` will be `true` if the request seeks to teleport `from` to `to`.
+
+Clients may, at any time, send a `TeleportEvent` packet to respond to or manage their own requests.
+An `action` of `ACCEPT` or `DENY` shall behave like `/tpaccept` or `/tpdeny` respectively 
+if the current teleport request targeting the client, if any, originated from `target`.
+The `CANCEL` action will behave like `/tpcancel` if the client has sent their own teleport request, and it is pending.
