@@ -6,20 +6,20 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 
 
 public class OfflinePlayer implements Comparable<OfflinePlayer> {
 
     public static final DynamicCommandExceptionType INVALID_PLAYER_NAME = new DynamicCommandExceptionType(
             /*todo: change to PLAYER_COLOR*/
-            o -> Text.literal("Player ").append( Text.literal( o+"" ).formatted(Colors.LINK_INACTIVE) )
-                    .append( " not found. Did they change their name?").formatted(Colors.DEFAULT));
+            o -> Component.literal("Player ").append( Component.literal( o+"" ).withStyle(Colors.LINK_INACTIVE) )
+                    .append( " not found. Did they change their name?").withStyle(Colors.DEFAULT));
 
     private final UUID uuid;
     private String name;
@@ -56,19 +56,19 @@ public class OfflinePlayer implements Comparable<OfflinePlayer> {
         this.uuid = uuid;
     }
 
-    OfflinePlayer( NbtCompound nbt ) {
+    OfflinePlayer( CompoundTag nbt ) {
         this.uuid = nbt.getUuid( "uuid" ); /*todo: check invalid uuid*/
         this.name = nbt.getString( "name" );
     }
 
-    public NbtCompound toNbt( ) {
-        NbtCompound nbt = new NbtCompound();
+    public CompoundTag toNbt( ) {
+        CompoundTag nbt = new CompoundTag();
         nbt.putUuid("uuid", uuid);
         nbt.putString("name", name);
         return nbt;
     }
 
-    public static OfflinePlayer fromNbt( NbtCompound nbt ) {
+    public static OfflinePlayer fromNbt( CompoundTag nbt ) {
         return new OfflinePlayer( nbt );
     }
 
@@ -80,7 +80,7 @@ public class OfflinePlayer implements Comparable<OfflinePlayer> {
         return Main.serverState.getPlayerByUuid(uuid);
     }
 
-    public static OfflinePlayer fromContext(CommandContext<ServerCommandSource> context, String id ) throws CommandSyntaxException {
+    public static OfflinePlayer fromContext(CommandContext<CommandSourceStack> context, String id ) throws CommandSyntaxException {
         String playerName = StringArgumentType.getString(context, id);
         try {
             return fromName(playerName);

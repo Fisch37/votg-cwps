@@ -1,22 +1,22 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.network.NullableCodec;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.util.Uuids;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.UUID;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
 
 public class WaypointKey implements Comparable<WaypointKey> {
-    public static final PacketCodec<RegistryByteBuf, WaypointKey> PACKET_CODEC = PacketCodec.tuple(
-            new NullableCodec<>(Uuids.PACKET_CODEC), WaypointKey::getOwner,
-            PacketCodecs.STRING, WaypointKey::getName,
-            new NullableCodec<>(PacketCodecs.STRING), WaypointKey::getOwnerName,
+    public static final StreamCodec<RegistryFriendlyByteBuf, WaypointKey> PACKET_CODEC = StreamCodec.composite(
+            new NullableCodec<>(UUIDUtil.STREAM_CODEC), WaypointKey::getOwner,
+            ByteBufCodecs.STRING_UTF8, WaypointKey::getName,
+            new NullableCodec<>(ByteBufCodecs.STRING_UTF8), WaypointKey::getOwnerName,
             (uuid, name, ownerName) -> new WaypointKey(uuid, name)
     );
 
@@ -50,15 +50,15 @@ public class WaypointKey implements Comparable<WaypointKey> {
         return name+"/"+owner;
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
         nbt.putString("name", this.name);
         if (this.owner != null) nbt.putUuid("owner", this.owner);
 
         return nbt;
     }
 
-    public static WaypointKey fromNbt( NbtCompound nbt ) {
+    public static WaypointKey fromNbt( CompoundTag nbt ) {
         return new WaypointKey(
                 nbt.contains("owner") ? nbt.getUuid("owner") : null,
                 nbt.getString("name")

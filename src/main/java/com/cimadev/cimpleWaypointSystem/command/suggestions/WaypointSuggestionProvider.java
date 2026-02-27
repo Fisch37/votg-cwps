@@ -8,8 +8,6 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -18,8 +16,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiPredicate;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.level.ServerPlayer;
 
-public class WaypointSuggestionProvider implements SuggestionProvider<ServerCommandSource> {
+public class WaypointSuggestionProvider implements SuggestionProvider<CommandSourceStack> {
     private static final Logger LOGGER = LoggerFactory.getLogger(WaypointSuggestionProvider.class);
 
     private final boolean withOwner, removeImpossible;
@@ -54,8 +54,8 @@ public class WaypointSuggestionProvider implements SuggestionProvider<ServerComm
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayer();
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayer();
         String currentName;
         try {
             currentName = StringArgumentType.getString(context, waypointNameArgument);
@@ -93,6 +93,6 @@ public class WaypointSuggestionProvider implements SuggestionProvider<ServerComm
     
     @FunctionalInterface
     public interface WaypointValidator {
-        boolean test(ServerCommandSource source, Waypoint waypoint);
+        boolean test(CommandSourceStack source, Waypoint waypoint);
     }
 }

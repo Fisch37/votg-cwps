@@ -5,19 +5,18 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
-import net.minecraft.server.command.ServerCommandSource;
-
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
+import net.minecraft.commands.CommandSourceStack;
 
 import static com.cimadev.cimpleWaypointSystem.Main.config;
 
-public class AccessSuggestionProvider implements SuggestionProvider<ServerCommandSource> {
+public class AccessSuggestionProvider implements SuggestionProvider<CommandSourceStack> {
 
     private static final AccessLevel[] ALL_ACCESS_LEVELS = AccessLevel.values();
     private final AccessLevel[] includeAccessLevels;
-    private final Predicate<ServerCommandSource> override;
+    private final Predicate<CommandSourceStack> override;
 
     public AccessSuggestionProvider(AccessLevel... exclude) {
         /* Exclude any access level from a suggestion provider by passing it to the access provider. */
@@ -32,7 +31,7 @@ public class AccessSuggestionProvider implements SuggestionProvider<ServerComman
      * @param exclude any number of access levels which to
      *                exclude from suggestion if not overridden
      */
-    public AccessSuggestionProvider(final Predicate<ServerCommandSource> override, AccessLevel... exclude) {
+    public AccessSuggestionProvider(final Predicate<CommandSourceStack> override, AccessLevel... exclude) {
         this.override = override;
         int includedCounter = 0;
         final List<AccessLevel> CONFIG_EXCLUDED = config.disabledAccessLevels.get();
@@ -63,7 +62,7 @@ public class AccessSuggestionProvider implements SuggestionProvider<ServerComman
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         AccessLevel[] appliedLevels = ( override.test(context.getSource()) ? ALL_ACCESS_LEVELS : includeAccessLevels );
         for (AccessLevel access : appliedLevels) {
             builder.suggest(access.getName());

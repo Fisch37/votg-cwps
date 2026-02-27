@@ -1,16 +1,15 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.FriendsIntegration;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.util.Pair;
 import org.jetbrains.annotations.Contract;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Stream;
-
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.util.Tuple;
 import com.google.common.collect.ImmutableSortedMap;
 
 public class DataFixer {
@@ -36,15 +35,15 @@ public class DataFixer {
      * Ensures that this tag is marked with the current version.
      * @param tag The tag to modify
      */
-    public static void setToCurrentVersion(NbtCompound tag) {
+    public static void setToCurrentVersion(CompoundTag tag) {
         tag.putInt("data_version", CURRENT_VERSION);
     }
 
-    public static boolean isCurrentVersion(NbtCompound tag) {
+    public static boolean isCurrentVersion(CompoundTag tag) {
         return tag.getInt("data_version") == CURRENT_VERSION;
     }
 
-    public static NbtCompound fixData(NbtCompound data) {
+    public static CompoundTag fixData(CompoundTag data) {
         int dataVersion = data.getInt("data_version");
         if (dataVersion == CURRENT_VERSION) {
             return data;
@@ -62,12 +61,12 @@ public class DataFixer {
                 .orElseThrow(() -> new RuntimeException("No valid fixer found for " + dataVersion + " -> " + CURRENT_VERSION));
         int outputVersion = fix.getKey();
         FixerFunction function = fix.getValue();
-        NbtCompound fixed = applyFix(data, outputVersion, function);
+        CompoundTag fixed = applyFix(data, outputVersion, function);
         return fixData(fixed); // This doesn't loop infinitely because of the exit-condition above :)
     }
 
-    private static NbtCompound applyFix(NbtCompound data, int outputVersion, FixerFunction function) {
-        NbtCompound fixedData = data.copy();
+    private static CompoundTag applyFix(CompoundTag data, int outputVersion, FixerFunction function) {
+        CompoundTag fixedData = data.copy();
         function.fix(fixedData);
         fixedData.putInt("data_version", outputVersion);
         return fixedData;
@@ -76,7 +75,7 @@ public class DataFixer {
     @FunctionalInterface
     private interface FixerFunction {
         @Contract(mutates = "param")  // This is non-experimental as of annotations 26
-        void fix(NbtCompound data);
+        void fix(CompoundTag data);
     }
 
 
@@ -91,11 +90,11 @@ public class DataFixer {
      * (with this version).
      * Otherwise, the data will be lost.
      */
-    private static void FIX_transferFriendsToIntegration(NbtCompound input) {
+    private static void FIX_transferFriendsToIntegration(CompoundTag input) {
         // There is probably a bespoke data structure & algorithm that would cost less space & performance
         // Given how little this method will be called (if ever, at all), I don't see a reason to figure it out.
-        Set<Pair<UUID, UUID>> friendProposals = new HashSet<>();
-        input.getList("playerList", NbtElement.COMPOUND_TYPE).forEach(nbt -> {
+        Set<Tuple<UUID, UUID>> friendProposals = new HashSet<>();
+        input.getList("playerList", Tag.TAG_COMPOUND).forEach(nbt -> {
             NbtCompound playerData = (NbtCompound) nbt;
             NbtCompound friendsList = playerData.getCompound("friendList"); // Yes this is correct
             playerData.remove("friendList");
@@ -125,8 +124,8 @@ public class DataFixer {
                         }
                     });
         });
-        for (Pair<UUID, UUID> request : friendProposals) {
-            FriendsIntegration.sendFriendRequest(request.getLeft(), request.getRight());
+        for (Tuple<UUID, UUID> request : friendProposals) {
+            FriendsIntegration.sendFriendRequest(request.getA(), request.getB());
         }
     }
 }

@@ -4,36 +4,36 @@ import com.cimadev.cimpleWaypointSystem.Colors;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
 
 public class TpacceptCommand {
     private static final String COMMAND_NAME = "tpaccept";
-    private static final Text NO_TPA_ERROR_MESSAGE =
-            Text.literal("There is no ").formatted(Colors.FAILURE)
-            .append(Text.literal("/tpa").formatted(Formatting.YELLOW))
-            .append(Text.literal(" request open for you").formatted(Colors.FAILURE));
+    private static final Component NO_TPA_ERROR_MESSAGE =
+            Component.literal("There is no ").withStyle(Colors.FAILURE)
+            .append(Component.literal("/tpa").withStyle(ChatFormatting.YELLOW))
+            .append(Component.literal(" request open for you").withStyle(Colors.FAILURE));
 
     public static void register(
-            CommandDispatcher<ServerCommandSource> dispatcher,
-            CommandRegistryAccess commandRegistryAccess,
-            CommandManager.RegistrationEnvironment registrationEnvironment
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            CommandBuildContext commandRegistryAccess,
+            Commands.CommandSelection registrationEnvironment
     ) {
-        dispatcher.register(CommandManager.literal(COMMAND_NAME)
+        dispatcher.register(Commands.literal(COMMAND_NAME)
                 .executes(TpacceptCommand::acceptTeleport)
         );
 
     }
 
-    private static int acceptTeleport(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+    private static int acceptTeleport(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         TeleportRequest request = TeleportRequestManager.getInstance().removeRequest(
-                context.getSource().getPlayerOrThrow()
+                context.getSource().getPlayerOrException()
         );
         if (request == null) {
-            context.getSource().sendFeedback(() -> NO_TPA_ERROR_MESSAGE, false);
+            context.getSource().sendSuccess(() -> NO_TPA_ERROR_MESSAGE, false);
             return 0;
         }
         request.perform();

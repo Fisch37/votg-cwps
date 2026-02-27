@@ -3,33 +3,33 @@ package com.cimadev.cimpleWaypointSystem.command.tpa;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.command.EntitySelector;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.selector.EntitySelector;
+import net.minecraft.server.level.ServerPlayer;
 
 public class TpaCommand {
     private static final String COMMAND_NAME = "tpa";
 
     public static void register(
-            CommandDispatcher<ServerCommandSource> dispatcher,
-            CommandRegistryAccess commandRegistryAccess,
-            CommandManager.RegistrationEnvironment registrationEnvironment
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            CommandBuildContext commandRegistryAccess,
+            Commands.CommandSelection registrationEnvironment
     ) {
-        dispatcher.register(CommandManager.literal(COMMAND_NAME)
-                .then(CommandManager.argument("target", EntityArgumentType.player())
+        dispatcher.register(Commands.literal(COMMAND_NAME)
+                .then(Commands.argument("target", EntityArgument.player())
                     .executes(TpaCommand::askTp)
                 )
         );
 
     }
 
-    private static int askTp(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity origin = context.getSource().getPlayerOrThrow();
+    private static int askTp(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer origin = context.getSource().getPlayerOrException();
         EntitySelector entity = context.getArgument("target", EntitySelector.class);
-        ServerPlayerEntity target = entity.getPlayer(context.getSource());
+        ServerPlayer target = entity.findSinglePlayer(context.getSource());
 
         final TeleportRequest request = new TeleportRequest(origin, target, false);
         if (TpaMessages.handleDuplicateAndBusy(request))

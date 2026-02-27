@@ -4,38 +4,38 @@ import com.cimadev.cimpleWaypointSystem.Colors;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 public class TpcancelCommand {
     public static void register(
-            CommandDispatcher<ServerCommandSource> dispatcher,
-            CommandRegistryAccess commandRegistryAccess,
-            CommandManager.RegistrationEnvironment registrationEnvironment
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            CommandBuildContext commandRegistryAccess,
+            Commands.CommandSelection registrationEnvironment
     ) {
-        dispatcher.register(CommandManager.literal("tpcancel").executes(TpcancelCommand::execute));
+        dispatcher.register(Commands.literal("tpcancel").executes(TpcancelCommand::execute));
     }
 
-    public static int execute(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        ServerPlayerEntity player = context.getSource().getPlayerOrThrow();
+    public static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = context.getSource().getPlayerOrException();
         TeleportRequest request = TeleportRequestManager.getInstance().removeRequestByOrigin(player);
         if (request == null) {
-            player.sendMessage(Text.literal("You have no teleport request open").formatted(Colors.FAILURE));
+            player.sendSystemMessage(Component.literal("You have no teleport request open").withStyle(Colors.FAILURE));
             return 0;
         } else {
-            request.getTarget().sendMessage(
-                    player.getName().copy().formatted(Colors.PLAYER)
+            request.getTarget().displayClientMessage(
+                    player.getName().copy().withStyle(Colors.PLAYER)
                             .append(" has cancelled their teleport request.")
-                            .formatted(Colors.DEFAULT),
+                            .withStyle(Colors.DEFAULT),
                     false
             );
-            player.sendMessage(Text.literal("Your teleport request to ")
-                    .append(player.getName().copy().formatted(Colors.PLAYER))
+            player.sendSystemMessage(Component.literal("Your teleport request to ")
+                    .append(player.getName().copy().withStyle(Colors.PLAYER))
                     .append(" has been cancelled")
-                    .formatted(Colors.DEFAULT)
+                    .withStyle(Colors.DEFAULT)
             );
             return 1;
         }

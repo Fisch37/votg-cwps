@@ -1,17 +1,22 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.ChatFormatting;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,11 +27,11 @@ import java.util.UUID;
 import static com.cimadev.cimpleWaypointSystem.Main.*;
 
 public class Waypoint implements Comparable<Waypoint> {
-    public static final PacketCodec<RegistryByteBuf, Waypoint> PACKET_CODEC = PacketCodec.tuple(
+    public static final StreamCodec<RegistryFriendlyByteBuf, Waypoint> PACKET_CODEC = StreamCodec.composite(
             WaypointKey.PACKET_CODEC, Waypoint::getKey,
-            BlockPos.PACKET_CODEC, Waypoint::getPosition,
-            RegistryKey.createPacketCodec(RegistryKeys.WORLD), Waypoint::getWorldRegKey,
-            PacketCodecs.INTEGER, Waypoint::getYaw,
+            BlockPos.STREAM_CODEC, Waypoint::getPosition,
+            ResourceKey.streamCodec(Registries.DIMENSION), Waypoint::getWorldRegKey,
+            ByteBufCodecs.INT, Waypoint::getYaw,
             AccessLevel.PACKET_CODEC, Waypoint::getAccess,
             Waypoint::new
     );
@@ -37,7 +42,7 @@ public class Waypoint implements Comparable<Waypoint> {
     private int yaw;
     private AccessLevel access;
 
-    private final RegistryKey<World> worldRegKey;
+    private final ResourceKey<Level> worldRegKey;
 
     public String getName() {
         return key.getName();
@@ -66,7 +71,7 @@ public class Waypoint implements Comparable<Waypoint> {
         return key;
     }
 
-    public RegistryKey<World> getWorldRegKey() {
+    public ResourceKey<Level> getWorldRegKey() {
         return worldRegKey;
     }
 
@@ -97,18 +102,18 @@ public class Waypoint implements Comparable<Waypoint> {
         return access;
     }
 
-    public Text getAccessFormatted() {
+    public Component getAccessFormatted() {
         return this.access.getNameFormatted();
     }
 
-    public Text getNameFormatted() {
+    public Component getNameFormatted() {
         HoverEvent waypointTooltip = new HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
-                Text.literal(
+                Component.literal(
                         position.getX()
                                 + " " + position.getY()
                                 + " " + position.getZ()
-                                + " in " + worldRegKey.getValue().toString()
+                                + " in " + worldRegKey.identifier().toString()
                 ));
         ClickEvent waypointCommand;
         try {
@@ -119,7 +124,7 @@ public class Waypoint implements Comparable<Waypoint> {
         } catch (IllegalStateException | IllegalArgumentException e) {
             waypointCommand = null;
         }
-        MutableText waypointName = Text.literal(key.getName()).formatted(Colors.LINK, Formatting.UNDERLINE);
+        MutableComponent waypointName = Component.literal(key.getName()).withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
         Style waypointStyle = waypointName.getStyle()
                 .withHoverEvent(waypointTooltip);
         if (waypointCommand != null)
@@ -161,7 +166,7 @@ public class Waypoint implements Comparable<Waypoint> {
         return getNameForCommand() + " " + ownerPart;
     }
 
-    private Waypoint(WaypointKey key, BlockPos pos, RegistryKey<World> world, Integer yaw, AccessLevel access) {
+    private Waypoint(WaypointKey key, BlockPos pos, ResourceKey<Level> world, Integer yaw, AccessLevel access) {
         this.key = key;
         this.position = pos;
         this.worldRegKey = world;
@@ -169,7 +174,7 @@ public class Waypoint implements Comparable<Waypoint> {
         this.access = access;
     }
 
-    public Waypoint(String name, BlockPos position, Double yaw, RegistryKey<World> world, UUID owner, AccessLevel access) {
+    public Waypoint(String name, BlockPos position, Double yaw, ResourceKey<Level> world, UUID owner, AccessLevel access) {
         this.key = new WaypointKey(owner, name);
         this.position = position;
         this.yaw = yaw.intValue();
@@ -177,7 +182,7 @@ public class Waypoint implements Comparable<Waypoint> {
         this.access = access;
     }
 
-    private Waypoint( NbtCompound nbt ) {
+    private Waypoint( CompoundTag nbt ) {
         this.key = WaypointKey.fromNbt(nbt.getCompound("key"));
         int[] position = nbt.getIntArray("position");
         this.position = new BlockPos( position[0], position[1], position[2] );
@@ -188,23 +193,23 @@ public class Waypoint implements Comparable<Waypoint> {
             this.access = AccessLevel.SECRET;
             log.warn("Found unknown access level while loading waypoint. Set waypoint to secret");
         }
-        Identifier regKeyVal = Identifier.of(nbt.getString( "worldRegKeyValue" ));
-        Identifier regKeyReg = Identifier.of(nbt.getString( "worldRegKeyRegistry" ));
-        this.worldRegKey = RegistryKey.of( RegistryKey.ofRegistry(regKeyReg), regKeyVal );
+        Identifier regKeyVal = Identifier.parse(nbt.getString( "worldRegKeyValue" ));
+        Identifier regKeyReg = Identifier.parse(nbt.getString( "worldRegKeyRegistry" ));
+        this.worldRegKey = ResourceKey.create( ResourceKey.createRegistryKey(regKeyReg), regKeyVal );
     }
 
-    public static Waypoint fromNbt( NbtCompound nbt ) {
+    public static Waypoint fromNbt( CompoundTag nbt ) {
         return new Waypoint( nbt );
     }
 
-    public NbtCompound toNbt() {
-        NbtCompound nbt = new NbtCompound();
+    public CompoundTag toNbt() {
+        CompoundTag nbt = new CompoundTag();
         nbt.put("key", key.toNbt());
         nbt.putIntArray("position", new int[] {position.getX(), position.getY(), position.getZ()});
         nbt.putInt("yaw", yaw);
         nbt.putString("access", access.getName());
-        nbt.putString("worldRegKeyRegistry", worldRegKey.getRegistry().toString() );
-        nbt.putString("worldRegKeyValue", worldRegKey.getValue().toString() );
+        nbt.putString("worldRegKeyRegistry", worldRegKey.registry().toString() );
+        nbt.putString("worldRegKeyValue", worldRegKey.identifier().toString() );
 
         return nbt;
     }

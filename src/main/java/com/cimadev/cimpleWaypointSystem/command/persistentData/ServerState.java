@@ -1,21 +1,22 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
+import Type;
 import com.cimadev.cimpleWaypointSystem.FriendsIntegration;
 import com.cimadev.cimpleWaypointSystem.Main;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.registry.RegistryWrapper;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.world.PersistentState;
-import net.minecraft.world.PersistentStateManager;
-import net.minecraft.world.World;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
-public class ServerState extends PersistentState {
+public class ServerState extends SavedData {
 
     private final HashMap<WaypointKey, Waypoint> worldWideWaypoints = new HashMap<>();
     private final HashMap<UUID, PlayerHome> playerHomes = new HashMap<>();
@@ -68,15 +69,15 @@ public class ServerState extends PersistentState {
         return playerNames;
     }
 
-    public void setPlayer(ServerPlayerEntity player) {
+    public void setPlayer(ServerPlayer player) {
         String playerName = player.getName().getString();
-        UUID playerUuid = player.getUuid();
+        UUID playerUuid = player.getUUID();
 
         setPlayer( playerName, playerUuid );
     }
 
-    public boolean waypointAccess(Waypoint waypoint, ServerPlayerEntity player) {
-        return waypointAccess(waypoint, player.getUuid());
+    public boolean waypointAccess(Waypoint waypoint, ServerPlayer player) {
+        return waypointAccess(waypoint, player.getUUID());
     }
 
     public boolean waypointAccess(Waypoint waypoint, OfflinePlayer player) {
@@ -125,7 +126,7 @@ public class ServerState extends PersistentState {
             playersByName.put(playerName, pByUuid);
         }
 
-        this.markDirty();
+        this.setDirty();
     }
 
     private void loadPlayer(OfflinePlayer player) {
@@ -134,17 +135,17 @@ public class ServerState extends PersistentState {
     }
 
     @Override
-    public NbtCompound writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup registryLookup) {
+    public CompoundTag writeNbt(CompoundTag nbt, HolderLookup.Provider registryLookup) {
         // todo: build a playerList, waypointList and homesList NbtElement to avoid redundancy of key (if possible)
-        NbtList pList = new NbtList();
+        ListTag pList = new ListTag();
         playersByUuid.values().forEach( offlinePlayer -> pList.add(offlinePlayer.toNbt()) );
         nbt.put("playerList", pList);
 
-        NbtList waypointList = new NbtList();
+        ListTag waypointList = new ListTag();
         worldWideWaypoints.values().forEach( waypoint -> waypointList.add(waypoint.toNbt()) );
         nbt.put("waypoints",waypointList);
 
-        NbtList playerHomesList = new NbtList();
+        ListTag playerHomesList = new ListTag();
         playerHomes.values().forEach( playerHome -> playerHomesList.add(playerHome.toNbt()) );
         nbt.put("playerHomes", playerHomesList);
 
@@ -153,22 +154,22 @@ public class ServerState extends PersistentState {
         return nbt;
     }
 
-    public static ServerState createFromNbt(NbtCompound tag, RegistryWrapper.WrapperLookup registryLookup) {
-        NbtCompound oldTag = tag;
+    public static ServerState createFromNbt(CompoundTag tag, HolderLookup.Provider registryLookup) {
+        CompoundTag oldTag = tag;
         tag = DataFixer.fixData(tag);
 
 
         ServerState serverState = new ServerState();
         if (!DataFixer.isCurrentVersion(oldTag))
-            serverState.markDirty();
-        NbtList pList = tag.getList("playerList", NbtElement.COMPOUND_TYPE);
-        pList.forEach( nbt -> serverState.loadPlayer( OfflinePlayer.fromNbt((NbtCompound) nbt)) );
+            serverState.setDirty();
+        ListTag pList = tag.getList("playerList", Tag.TAG_COMPOUND);
+        pList.forEach( nbt -> serverState.loadPlayer( OfflinePlayer.fromNbt((CompoundTag) nbt)) );
 
-        NbtList waypointList = tag.getList("waypoints", NbtElement.COMPOUND_TYPE);
-        waypointList.forEach( nbt -> serverState.setWaypoint( Waypoint.fromNbt((NbtCompound) nbt) ) );
+        ListTag waypointList = tag.getList("waypoints", Tag.TAG_COMPOUND);
+        waypointList.forEach( nbt -> serverState.setWaypoint( Waypoint.fromNbt((CompoundTag) nbt) ) );
 
-        NbtList playerHomesCompound = tag.getList("playerHomes", NbtElement.COMPOUND_TYPE);
-        playerHomesCompound.forEach(compound -> serverState.setPlayerHome( PlayerHome.fromNbt((NbtCompound) compound) ) );
+        ListTag playerHomesCompound = tag.getList("playerHomes", Tag.TAG_COMPOUND);
+        playerHomesCompound.forEach(compound -> serverState.setPlayerHome( PlayerHome.fromNbt((CompoundTag) compound) ) );
 
         return serverState;
     }
@@ -182,10 +183,10 @@ public class ServerState extends PersistentState {
 
     public static ServerState getServerState(MinecraftServer server) {
         // FIXME: This breaks mod compatibility when a mod removes the overworld. Yes that can happen.
-        PersistentStateManager persistentStateManager = server
-                .getWorld(World.OVERWORLD).getPersistentStateManager();
+        DimensionDataStorage persistentStateManager = server
+                .getLevel(Level.OVERWORLD).getDataStorage();
 
-        return persistentStateManager.getOrCreate(
+        return persistentStateManager.computeIfAbsent(
                 type,
                 Main.MOD_ID
         );

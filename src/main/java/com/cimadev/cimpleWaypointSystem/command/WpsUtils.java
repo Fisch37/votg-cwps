@@ -3,25 +3,23 @@ package com.cimadev.cimpleWaypointSystem.command;
 import com.cimadev.cimpleWaypointSystem.Main;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.TeleportTarget;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Set;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 public final class WpsUtils {
-    public static List<Waypoint> getAccessibleWaypoints(@Nullable ServerPlayerEntity player) {
+    public static List<Waypoint> getAccessibleWaypoints(@Nullable ServerPlayer player) {
         return getAccessibleWaypoints(player, null, false, false);
     }
 
     public static List<Waypoint> getAccessibleWaypoints(
-            @Nullable ServerPlayerEntity caller,
+            @Nullable ServerPlayer caller,
             @Nullable OfflinePlayer wantedOwner,
             boolean overrideAccessibility,
             boolean onlyOpen
@@ -55,14 +53,14 @@ public final class WpsUtils {
     }
 
     public static void teleport(
-            PlayerEntity player,
-            ServerWorld world,
+            Player player,
+            ServerLevel world,
             double x,
             double y,
             double z,
             float yaw,
             float pitch
     ) {
-        player.teleport(world, x, y, z, Set.of(), yaw, pitch, false);
+        player.teleportTo(world, x, y, z, Set.of(), yaw, pitch, false);
     }
 }

@@ -6,8 +6,7 @@ import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
 import com.cimadev.cimpleWaypointSystem.network.packet.WaypointInfo;
 import com.cimadev.cimpleWaypointSystem.network.packet.WaypointsPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
-import net.minecraft.server.network.ServerPlayerEntity;
-
+import net.minecraft.server.level.ServerPlayer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,7 +20,7 @@ public abstract class NetworkHandler {
         NetworkHandler.registerReceivers();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            final ServerPlayerEntity player = handler.getPlayer();
+            final ServerPlayer player = handler.getPlayer();
 
             List<Waypoint> waypoints;
             if (handler.getPlayer().hasPermissionLevel(4)) {

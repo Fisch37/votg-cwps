@@ -1,18 +1,18 @@
 package com.cimadev.cimpleWaypointSystem;
 
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
 
 public abstract class Colors {
-    public static final Formatting DEFAULT = Formatting.GOLD,
-            SECONDARY = Formatting.DARK_RED,
-            LINK = Formatting.LIGHT_PURPLE,
-            LINK_INACTIVE = Formatting.DARK_PURPLE,
-            SECRET = Formatting.RED,
-            PRIVATE = Formatting.YELLOW,
-            PUBLIC = Formatting.DARK_GREEN,
+    public static final ChatFormatting DEFAULT = ChatFormatting.GOLD,
+            SECONDARY = ChatFormatting.DARK_RED,
+            LINK = ChatFormatting.LIGHT_PURPLE,
+            LINK_INACTIVE = ChatFormatting.DARK_PURPLE,
+            SECRET = ChatFormatting.RED,
+            PRIVATE = ChatFormatting.YELLOW,
+            PUBLIC = ChatFormatting.DARK_GREEN,
             OPEN = PUBLIC,
-            PLAYER = Formatting.GREEN,
-            TIME = Formatting.AQUA,
-            FAILURE = Formatting.RED
+            PLAYER = ChatFormatting.GREEN,
+            TIME = ChatFormatting.AQUA,
+            FAILURE = ChatFormatting.RED
                     ;
 }

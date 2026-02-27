@@ -5,32 +5,33 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import net.minecraft.command.CommandRegistryAccess;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandBuildContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.text.*;
 
 public class TphereCommand {
     public static final SimpleCommandExceptionType SELF_TELEPORT_EXC = new SimpleCommandExceptionType(
-            Text.literal("You cannot teleport to yourself!")
+            Component.literal("You cannot teleport to yourself!")
     );
 
     public static void register(
-            CommandDispatcher<ServerCommandSource> dispatcher,
-            CommandRegistryAccess registryAccess,
-            CommandManager.RegistrationEnvironment environment
+            CommandDispatcher<CommandSourceStack> dispatcher,
+            CommandBuildContext registryAccess,
+            Commands.CommandSelection environment
     ) {
-        dispatcher.register(CommandManager.literal("tphere")
-                .then(CommandManager.argument("player", EntityArgumentType.player())
+        dispatcher.register(Commands.literal("tphere")
+                .then(Commands.argument("player", EntityArgument.player())
                         .executes(TphereCommand::execute)
         ));
     }
 
-    public static int execute(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
-        final ServerPlayerEntity origin = context.getSource().getPlayerOrThrow(),
-                target = EntityArgumentType.getPlayer(context, "player");
+    public static int execute(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        final ServerPlayer origin = context.getSource().getPlayerOrException(),
+                target = EntityArgument.getPlayer(context, "player");
         if (origin.equals(target)) {
             throw SELF_TELEPORT_EXC.create();
         }
@@ -39,11 +40,11 @@ public class TphereCommand {
             return 0;
         TeleportRequestManager.getInstance().addRequest(request);
         TpaMessages.sendRequestMessages(request);
-        context.getSource().sendFeedback(() ->
-                Text.literal("")
-                        .append(target.getName().copy().formatted(Colors.PLAYER))
+        context.getSource().sendSuccess(() ->
+                Component.literal("")
+                        .append(target.getName().copy().withStyle(Colors.PLAYER))
                         .append(" has received your teleport request!")
-                        .formatted(Colors.DEFAULT)
+                        .withStyle(Colors.DEFAULT)
                 ,
                 false
         );

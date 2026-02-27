@@ -5,11 +5,11 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.StreamCodec;
 
 import static com.cimadev.cimpleWaypointSystem.Main.*;
 
@@ -19,17 +19,17 @@ public enum AccessLevel {
     PUBLIC("public", Colors.PUBLIC),
     OPEN("open", Colors.OPEN);
 
-    public static final PacketCodec<RegistryByteBuf, AccessLevel> PACKET_CODEC = PacketCodec.of(
+    public static final StreamCodec<RegistryFriendlyByteBuf, AccessLevel> PACKET_CODEC = StreamCodec.ofMember(
             (val, buf) -> buf.writeByte(val.ordinal()),
             buf -> AccessLevel.values()[buf.readByte()]
     );
 
     private final String name;
-    private final Text nameFormatted;
+    private final Component nameFormatted;
 
-    AccessLevel(String name, Formatting color) {
+    AccessLevel(String name, ChatFormatting color) {
         this.name = name;
-        this.nameFormatted = Text.literal(this.name).formatted(color);
+        this.nameFormatted = Component.literal(this.name).withStyle(color);
     }
 
     public static AccessLevel fromString(String name) throws IllegalArgumentException {
@@ -42,7 +42,7 @@ public enum AccessLevel {
         };
     }
 
-    public static AccessLevel fromContext(CommandContext<ServerCommandSource> context, String id)
+    public static AccessLevel fromContext(CommandContext<CommandSourceStack> context, String id)
             throws CommandSyntaxException {
 
         String access = StringArgumentType.getString( context , id );
@@ -67,7 +67,7 @@ public enum AccessLevel {
         return name;
     }
 
-    public Text getNameFormatted() {
+    public Component getNameFormatted() {
         return nameFormatted;
     }
 }

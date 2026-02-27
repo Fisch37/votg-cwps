@@ -1,13 +1,13 @@
 package com.cimadev.cimpleWaypointSystem.command.tpa;
 
 import de.fisch37.datastructures.mi.MIQueue;
-import net.minecraft.entity.player.PlayerEntity;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
+import net.minecraft.world.entity.player.Player;
 
 public class TeleportRequestManager {
-    private final HashMap<PlayerEntity, TeleportRequest> playerToRequest, originToRequest;
+    private final HashMap<Player, TeleportRequest> playerToRequest, originToRequest;
     private final MIQueue<TeleportRequest> requests;
     private final static TeleportRequestManager SINGLETON = new TeleportRequestManager();
     private long currentTick = 0;
@@ -36,11 +36,11 @@ public class TeleportRequestManager {
         this.originToRequest.put(request.getOrigin(), request);
     }
 
-    public @Nullable TeleportRequest getRequest(PlayerEntity target) {
+    public @Nullable TeleportRequest getRequest(Player target) {
         return playerToRequest.get(target);
     }
 
-    public @Nullable TeleportRequest removeRequest(PlayerEntity target) {
+    public @Nullable TeleportRequest removeRequest(Player target) {
         @Nullable TeleportRequest request = this.playerToRequest.remove(target);
         if (request != null) request.dropout();
         return request;
@@ -52,17 +52,17 @@ public class TeleportRequestManager {
         return wasRemoved;
     }
 
-    public @Nullable TeleportRequest removeRequestByOrigin(PlayerEntity origin) {
+    public @Nullable TeleportRequest removeRequestByOrigin(Player origin) {
         @Nullable TeleportRequest request = this.originToRequest.remove(origin);
         if (request != null) request.dropout();
         return request;
     }
 
-    public boolean hasRequest(PlayerEntity target) {
+    public boolean hasRequest(Player target) {
         return this.playerToRequest.containsKey(target);
     }
 
-    public boolean hasOpenRequest(PlayerEntity origin) {
+    public boolean hasOpenRequest(Player origin) {
         return this.originToRequest.containsKey(origin);
     }
 
