@@ -5,6 +5,8 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -19,6 +21,7 @@ public enum AccessLevel {
     PUBLIC("public", Colors.PUBLIC),
     OPEN("open", Colors.OPEN);
 
+    public static final Codec<AccessLevel> CODEC = Codec.STRING.xmap(AccessLevel::fromString, AccessLevel::getName);
     public static final StreamCodec<RegistryFriendlyByteBuf, AccessLevel> PACKET_CODEC = StreamCodec.ofMember(
             (val, buf) -> buf.writeByte(val.ordinal()),
             buf -> AccessLevel.values()[buf.readByte()]
@@ -32,6 +35,7 @@ public enum AccessLevel {
         this.nameFormatted = Component.literal(this.name).withStyle(color);
     }
 
+    @Deprecated
     public static AccessLevel fromString(String name) throws IllegalArgumentException {
         return switch (name) {
             case "secret" -> AccessLevel.SECRET;
@@ -39,6 +43,15 @@ public enum AccessLevel {
             case "public" -> AccessLevel.PUBLIC;
             case "open" ->  AccessLevel.OPEN;
             default -> throw new IllegalArgumentException(name + " is not an acceptable access name.");
+        };
+    }
+    public static DataResult<AccessLevel> fromStringSafe(String name) {
+        return switch (name) {
+            case "secret" -> DataResult.success(AccessLevel.SECRET);
+            case "private" -> DataResult.success(AccessLevel.PRIVATE);
+            case "public" -> DataResult.success(AccessLevel.PUBLIC);
+            case "open" ->  DataResult.success(AccessLevel.OPEN);
+            default -> DataResult.error(() -> name + " is not an acceptable access name.");
         };
     }
 

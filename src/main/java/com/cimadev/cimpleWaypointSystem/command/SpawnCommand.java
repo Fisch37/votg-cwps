@@ -30,11 +30,13 @@ public class SpawnCommand {
     public static int goSpawn(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         CommandSourceStack commandSource = context.getSource();
         ServerPlayer player = commandSource.getPlayerOrException();
-        ServerLevel overworld = player.getServer().getOverworld();
-        BlockPos spawn = overworld.getSpawnPos();
-        WpsUtils.teleport(player, overworld, spawn.getX(), spawn.getY(), spawn.getZ(), 0, 0);
-        // TODO: Is requestTeleport a duplicate?
-        player.teleportTo(spawn.getX(), spawn.getY(), spawn.getZ());
+        var respawn = context.getSource().getServer().overworld().getRespawnData();
+        WpsUtils.teleport(
+                player,
+                context.getSource().getServer().getLevel(respawn.dimension()),
+                respawn.pos(),
+                0, 0
+        );
         Supplier<Component> messageText = () -> Component.literal("Teleported to the spawnpoint.").withStyle(Colors.DEFAULT);
         commandSource.sendSuccess(messageText, false);
         return 1;

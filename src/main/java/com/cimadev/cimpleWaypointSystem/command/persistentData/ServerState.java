@@ -1,27 +1,65 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
-import Type;
 import com.cimadev.cimpleWaypointSystem.FriendsIntegration;
 import com.cimadev.cimpleWaypointSystem.Main;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.level.saveddata.SavedDataType;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class ServerState extends SavedData {
+    private static final Codec<ServerState> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            // TODO: Is this truly better than using Maps?
+            //  +: Lists use the minimum amount of space to express all information
+            //  +: Lists reduce the cross-dependency of our stored data, meaning it is easier to parse in data-fixers
+            //  -: Map codecs are likely faster, saving on a serialisation layer during serialization.
+            //  -: But maybe not that much, since we have a considerable O(n) layer anyway.
+            Waypoint.CODEC.listOf()
+                    .fieldOf("waypoints")
+                    .forGetter(o -> o.worldWideWaypoints.values().stream().toList()),
+            PlayerHome.CODEC.listOf()
+                    .fieldOf("homes")
+                    .forGetter(o -> o.playerHomes.values().stream().toList()),
+            OfflinePlayer.CODEC.listOf()
+                    .fieldOf("player_cache")
+                    .forGetter(o -> o.playersByUuid.values().stream().toList())
+    ).apply(instance, ServerState::new));
 
-    private final HashMap<WaypointKey, Waypoint> worldWideWaypoints = new HashMap<>();
-    private final HashMap<UUID, PlayerHome> playerHomes = new HashMap<>();
-    private final HashMap<String, OfflinePlayer> playersByName = new HashMap<>();
-    private final HashMap<UUID, OfflinePlayer> playersByUuid = new HashMap<>();
+    private final Map<WaypointKey, Waypoint> worldWideWaypoints;
+    private final Map<UUID, PlayerHome> playerHomes;
+    private final Map<String, OfflinePlayer> playersByName;
+    private final Map<UUID, OfflinePlayer> playersByUuid;
+
+    public ServerState() {
+        worldWideWaypoints = new HashMap<>();
+        playerHomes = new HashMap<>();
+        playersByName = new HashMap<>();
+        playersByUuid = new HashMap<>();
+    }
+    private ServerState(
+            List<Waypoint> waypoints,
+            List<PlayerHome> homes,
+            List<OfflinePlayer> playerCache
+    ) {
+        worldWideWaypoints = waypoints.stream()
+                .collect(Collectors.toMap(Waypoint::getKey, Function.identity()));
+        playerHomes = homes.stream()
+                .collect(Collectors.toMap(PlayerHome::getOwner, Function.identity()));
+        playersByUuid = new HashMap<>();
+        playersByName = new HashMap<>();
+        for (var player : playerCache) {
+            playersByUuid.put(player.getUuid(), player);
+            playersByName.put(player.getName(), player);
+        }
+    }
 
     public void setPlayerHome( PlayerHome playerHome ) {
         playerHomes.put(playerHome.getOwner(), playerHome);
@@ -134,61 +172,18 @@ public class ServerState extends SavedData {
         playersByName.put(player.getName(), player);
     }
 
-    @Override
-    public CompoundTag writeNbt(CompoundTag nbt, HolderLookup.Provider registryLookup) {
-        // todo: build a playerList, waypointList and homesList NbtElement to avoid redundancy of key (if possible)
-        ListTag pList = new ListTag();
-        playersByUuid.values().forEach( offlinePlayer -> pList.add(offlinePlayer.toNbt()) );
-        nbt.put("playerList", pList);
-
-        ListTag waypointList = new ListTag();
-        worldWideWaypoints.values().forEach( waypoint -> waypointList.add(waypoint.toNbt()) );
-        nbt.put("waypoints",waypointList);
-
-        ListTag playerHomesList = new ListTag();
-        playerHomes.values().forEach( playerHome -> playerHomesList.add(playerHome.toNbt()) );
-        nbt.put("playerHomes", playerHomesList);
-
-        DataFixer.setToCurrentVersion(nbt);
-
-        return nbt;
-    }
-
-    public static ServerState createFromNbt(CompoundTag tag, HolderLookup.Provider registryLookup) {
-        CompoundTag oldTag = tag;
-        tag = DataFixer.fixData(tag);
-
-
-        ServerState serverState = new ServerState();
-        if (!DataFixer.isCurrentVersion(oldTag))
-            serverState.setDirty();
-        ListTag pList = tag.getList("playerList", Tag.TAG_COMPOUND);
-        pList.forEach( nbt -> serverState.loadPlayer( OfflinePlayer.fromNbt((CompoundTag) nbt)) );
-
-        ListTag waypointList = tag.getList("waypoints", Tag.TAG_COMPOUND);
-        waypointList.forEach( nbt -> serverState.setWaypoint( Waypoint.fromNbt((CompoundTag) nbt) ) );
-
-        ListTag playerHomesCompound = tag.getList("playerHomes", Tag.TAG_COMPOUND);
-        playerHomesCompound.forEach(compound -> serverState.setPlayerHome( PlayerHome.fromNbt((CompoundTag) compound) ) );
-
-        return serverState;
-    }
-
-
-    private final static Type<ServerState> type = new Type<>(
+    private static final SavedDataType<ServerState> TYPE = new SavedDataType<>(
+            Main.MOD_ID,
             ServerState::new,
-            ServerState::createFromNbt,
+            CODEC,
+            // FIXME: Passing 'null' argument to parameter annotated as @NotNu
+            //  Figure out what should go here instead.
             null
     );
 
     public static ServerState getServerState(MinecraftServer server) {
-        // FIXME: This breaks mod compatibility when a mod removes the overworld. Yes that can happen.
-        DimensionDataStorage persistentStateManager = server
-                .getLevel(Level.OVERWORLD).getDataStorage();
-
-        return persistentStateManager.computeIfAbsent(
-                type,
-                Main.MOD_ID
-        );
+        return Optional.ofNullable(server.getLevel(Level.OVERWORLD))
+                .map(level -> level.getDataStorage().computeIfAbsent(TYPE))
+                .orElseGet(ServerState::new);
     }
 }

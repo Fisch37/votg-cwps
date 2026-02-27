@@ -6,6 +6,9 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.core.UUIDUtil;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
@@ -15,6 +18,10 @@ import net.minecraft.network.chat.Component;
 
 
 public class OfflinePlayer implements Comparable<OfflinePlayer> {
+    public static final Codec<OfflinePlayer> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            UUIDUtil.CODEC.fieldOf("uuid").forGetter(OfflinePlayer::getUuid),
+            Codec.STRING.fieldOf("name").forGetter(OfflinePlayer::getName)
+    ).apply(instance, OfflinePlayer::new));
 
     public static final DynamicCommandExceptionType INVALID_PLAYER_NAME = new DynamicCommandExceptionType(
             /*todo: change to PLAYER_COLOR*/
@@ -54,22 +61,6 @@ public class OfflinePlayer implements Comparable<OfflinePlayer> {
     public OfflinePlayer (@NotNull UUID uuid, @NotNull String name) {
         this.name = name;
         this.uuid = uuid;
-    }
-
-    OfflinePlayer( CompoundTag nbt ) {
-        this.uuid = nbt.getUuid( "uuid" ); /*todo: check invalid uuid*/
-        this.name = nbt.getString( "name" );
-    }
-
-    public CompoundTag toNbt( ) {
-        CompoundTag nbt = new CompoundTag();
-        nbt.putUuid("uuid", uuid);
-        nbt.putString("name", name);
-        return nbt;
-    }
-
-    public static OfflinePlayer fromNbt( CompoundTag nbt ) {
-        return new OfflinePlayer( nbt );
     }
 
     public static OfflinePlayer fromName(String name) throws NullPointerException {

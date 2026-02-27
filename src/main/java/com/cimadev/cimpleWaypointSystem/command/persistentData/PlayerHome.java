@@ -2,8 +2,13 @@ package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
 import java.util.UUID;
+
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -11,12 +16,20 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.Level;
 
 public class PlayerHome {
+    public static final Codec<PlayerHome> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            BlockPos.CODEC.fieldOf("position").forGetter(PlayerHome::getPosition),
+            Codec.INT.fieldOf("yaw").forGetter(PlayerHome::getYaw),
+            ResourceKey.codec(Registries.DIMENSION).fieldOf("dimension").forGetter(PlayerHome::worldRegistryKey),
+            UUIDUtil.CODEC.fieldOf("owner").forGetter(PlayerHome::getOwner)
+    ).apply(instance, PlayerHome::new));
+
     private BlockPos position;
 
     private int yaw;
-    private ResourceKey worldRegKey;
+    private ResourceKey<Level> worldRegKey;
 
     private UUID owner;
 
@@ -28,7 +41,7 @@ public class PlayerHome {
         return yaw;
     }
 
-    public ResourceKey worldRegistryKey() {
+    public ResourceKey<Level> worldRegistryKey() {
         return worldRegKey;
     }
 
@@ -37,43 +50,19 @@ public class PlayerHome {
     }
 
     public Component positionHover(String text) {
-        HoverEvent positionTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("x: " + position.getX() + ", y: " + position.getY() + ", z: " + position.getZ()));
+        HoverEvent positionTooltip = new HoverEvent.ShowText(
+                Component.literal("x: " + position.getX() + ", y: " + position.getY() + ", z: " + position.getZ())
+        );
         MutableComponent formatted = Component.literal(text).withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
         Style waypointStyle = formatted.getStyle();
         formatted.setStyle(waypointStyle.withHoverEvent(positionTooltip));
         return formatted;
     }
 
-    public PlayerHome (BlockPos position, Double yaw, ResourceKey world, UUID owner) {
+    public PlayerHome (BlockPos position, int yaw, ResourceKey<Level> world, UUID owner) {
         this.position = position;
-        this.yaw = yaw.intValue();
+        this.yaw = yaw;
         this.worldRegKey = world;
         this.owner = owner;
-    }
-
-    private PlayerHome ( CompoundTag nbt ) {
-        int position[] = nbt.getIntArray("position");
-        this.position = new BlockPos( position[0], position[1], position[2] );
-        this.yaw = nbt.getInt("yaw");
-        Identifier regKeyVal = Identifier.parse(nbt.getString( "worldRegKeyValue" ));
-        Identifier regKeyReg = Identifier.parse(nbt.getString( "worldRegKeyRegistry" ));
-        this.worldRegKey = ResourceKey.create( ResourceKey.createRegistryKey(regKeyReg), regKeyVal );
-        this.owner = nbt.getUuid("owner");
-    }
-
-    public static PlayerHome fromNbt(CompoundTag nbt) {
-        return new PlayerHome( nbt );
-    }
-
-    public CompoundTag toNbt( ) {
-        CompoundTag playerStateNbt = new CompoundTag();
-
-        playerStateNbt.putUuid("owner", owner);
-        playerStateNbt.putIntArray("position", new int[] {position.getX(), position.getY(), position.getZ()});
-        playerStateNbt.putInt("yaw", yaw);
-        playerStateNbt.putString("worldRegKeyRegistry", worldRegKey.registry().toString() );
-        playerStateNbt.putString("worldRegKeyValue", worldRegKey.identifier().toString() );
-
-        return playerStateNbt;
     }
 }

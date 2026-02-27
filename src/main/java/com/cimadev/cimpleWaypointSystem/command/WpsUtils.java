@@ -3,6 +3,7 @@ package com.cimadev.cimpleWaypointSystem.command;
 import com.cimadev.cimpleWaypointSystem.Main;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
+import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -62,5 +63,15 @@ public final class WpsUtils {
             float pitch
     ) {
         player.teleportTo(world, x, y, z, Set.of(), yaw, pitch, false);
+    }
+
+    public static void teleport(
+            Player player,
+            ServerLevel world,
+            BlockPos pos,
+            float yaw,
+            float pitch
+    ) {
+        teleport(player, world, pos.getX(), pos.getY(), pos.getZ(), yaw, pitch);
     }
 }

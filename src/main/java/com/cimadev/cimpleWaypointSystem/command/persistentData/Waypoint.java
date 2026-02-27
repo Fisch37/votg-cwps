@@ -1,10 +1,11 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -13,13 +14,9 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.text.*;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.UUID;
@@ -27,6 +24,13 @@ import java.util.UUID;
 import static com.cimadev.cimpleWaypointSystem.Main.*;
 
 public class Waypoint implements Comparable<Waypoint> {
+    public static final Codec<Waypoint> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            WaypointKey.CODEC.fieldOf("key").forGetter(Waypoint::getKey),
+            BlockPos.CODEC.fieldOf("position").forGetter(Waypoint::getPosition),
+            ResourceKey.codec(Registries.DIMENSION).fieldOf("dimension").forGetter(Waypoint::getWorldRegKey),
+            Codec.INT.fieldOf("yaw").forGetter(Waypoint::getYaw),
+            AccessLevel.CODEC.fieldOf("access").forGetter(Waypoint::getAccess)
+    ).apply(instance, Waypoint::new));
     public static final StreamCodec<RegistryFriendlyByteBuf, Waypoint> PACKET_CODEC = StreamCodec.composite(
             WaypointKey.PACKET_CODEC, Waypoint::getKey,
             BlockPos.STREAM_CODEC, Waypoint::getPosition,
@@ -36,13 +40,28 @@ public class Waypoint implements Comparable<Waypoint> {
             Waypoint::new
     );
 
-    private static final Logger log = LoggerFactory.getLogger(Waypoint.class);
     private final WaypointKey key;
     private BlockPos position;
+    // TODO: Why is this final? Surely /wps move should work into another dimension?
+    private final ResourceKey<Level> worldRegKey;
     private int yaw;
     private AccessLevel access;
 
-    private final ResourceKey<Level> worldRegKey;
+    private Waypoint(WaypointKey key, BlockPos pos, ResourceKey<Level> world, int yaw, AccessLevel access) {
+        this.key = key;
+        this.position = pos;
+        this.worldRegKey = world;
+        this.yaw = yaw;
+        this.access = access;
+    }
+
+    public Waypoint(String name, BlockPos position, Double yaw, ResourceKey<Level> world, UUID owner, AccessLevel access) {
+        this.key = new WaypointKey(owner, name);
+        this.position = position;
+        this.yaw = yaw.intValue();
+        this.worldRegKey = world;
+        this.access = access;
+    }
 
     public String getName() {
         return key.getName();
@@ -107,8 +126,7 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public Component getNameFormatted() {
-        HoverEvent waypointTooltip = new HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
+        HoverEvent waypointTooltip = new HoverEvent.ShowText(
                 Component.literal(
                         position.getX()
                                 + " " + position.getY()
@@ -117,8 +135,7 @@ public class Waypoint implements Comparable<Waypoint> {
                 ));
         ClickEvent waypointCommand;
         try {
-            waypointCommand = new ClickEvent(
-                    ClickEvent.Action.SUGGEST_COMMAND,
+            waypointCommand = new ClickEvent.SuggestCommand(
                     "/wps go " + getCommandComponent()
             );
         } catch (IllegalStateException | IllegalArgumentException e) {
@@ -164,54 +181,6 @@ public class Waypoint implements Comparable<Waypoint> {
             ownerPart = player.getName();
         }
         return getNameForCommand() + " " + ownerPart;
-    }
-
-    private Waypoint(WaypointKey key, BlockPos pos, ResourceKey<Level> world, Integer yaw, AccessLevel access) {
-        this.key = key;
-        this.position = pos;
-        this.worldRegKey = world;
-        this.yaw = yaw;
-        this.access = access;
-    }
-
-    public Waypoint(String name, BlockPos position, Double yaw, ResourceKey<Level> world, UUID owner, AccessLevel access) {
-        this.key = new WaypointKey(owner, name);
-        this.position = position;
-        this.yaw = yaw.intValue();
-        this.worldRegKey = world;
-        this.access = access;
-    }
-
-    private Waypoint( CompoundTag nbt ) {
-        this.key = WaypointKey.fromNbt(nbt.getCompound("key"));
-        int[] position = nbt.getIntArray("position");
-        this.position = new BlockPos( position[0], position[1], position[2] );
-        this.yaw = nbt.getInt("yaw");
-        try {
-            this.access = AccessLevel.fromString(nbt.getString("access"));
-        } catch (IllegalArgumentException i) {
-            this.access = AccessLevel.SECRET;
-            log.warn("Found unknown access level while loading waypoint. Set waypoint to secret");
-        }
-        Identifier regKeyVal = Identifier.parse(nbt.getString( "worldRegKeyValue" ));
-        Identifier regKeyReg = Identifier.parse(nbt.getString( "worldRegKeyRegistry" ));
-        this.worldRegKey = ResourceKey.create( ResourceKey.createRegistryKey(regKeyReg), regKeyVal );
-    }
-
-    public static Waypoint fromNbt( CompoundTag nbt ) {
-        return new Waypoint( nbt );
-    }
-
-    public CompoundTag toNbt() {
-        CompoundTag nbt = new CompoundTag();
-        nbt.put("key", key.toNbt());
-        nbt.putIntArray("position", new int[] {position.getX(), position.getY(), position.getZ()});
-        nbt.putInt("yaw", yaw);
-        nbt.putString("access", access.getName());
-        nbt.putString("worldRegKeyRegistry", worldRegKey.registry().toString() );
-        nbt.putString("worldRegKeyValue", worldRegKey.identifier().toString() );
-
-        return nbt;
     }
 
     /**

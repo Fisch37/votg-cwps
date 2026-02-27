@@ -2,6 +2,7 @@ package com.cimadev.cimpleWaypointSystem.command;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
 import com.cimadev.cimpleWaypointSystem.Main;
+import com.cimadev.cimpleWaypointSystem.PermissionHelpers;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.PlayerHome;
 import com.mojang.brigadier.CommandDispatcher;
@@ -21,8 +22,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.text.*;
-import java.util.*;
+
 import java.util.function.Supplier;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.word;
@@ -60,14 +60,14 @@ public class HomeCommand {
                         .executes(HomeCommand::homeHelp)
                 )
                 .then(Commands.literal("set")
-                        .requires(source -> source.hasPermissionLevel(3))   // only admin and owner may set other's homes
+                        .requires(PermissionHelpers::hasAdmin)   // only admin and owner may set other's homes
                         .then(Commands.argument("position", BlockPosArgument.blockPos())
                                 .then(Commands.argument("world", DimensionArgument.dimension())
                                         .then(Commands.argument("player", word())
                                                 .executes(HomeCommand::homeSet)
                 ))))
                 .then(Commands.literal("of")
-                        .requires(source-> source.hasPermissionLevel(3))
+                        .requires(PermissionHelpers::hasAdmin)
                         .then(Commands.argument("owner", word())
                                 .executes(HomeCommand::homeOf)
                 )));
@@ -94,7 +94,7 @@ public class HomeCommand {
 
             MutableComponent spawnpoint = Component.literal("spawnpoint").withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
             Style style = spawnpoint.getStyle();
-            HoverEvent spawncoords = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("x: " + homePos.getX() + ", y: " + homePos.getY() + ", z: " + homePos.getZ()));
+            HoverEvent spawncoords = new HoverEvent.ShowText(Component.literal("x: " + homePos.getX() + ", y: " + homePos.getY() + ", z: " + homePos.getZ()));
             spawnpoint.setStyle(style.withHoverEvent(spawncoords));
             messageText = () -> Component.literal("Teleported to your ")
                     .append(spawnpoint)
@@ -126,7 +126,7 @@ public class HomeCommand {
         BlockPos blockPos = new BlockPos(player.blockPosition());
         double yaw = player.getYRot();
         ServerLevel world = player.level();
-        PlayerHome playerHome = new PlayerHome(blockPos, yaw, world.dimension(), player.getUUID());
+        PlayerHome playerHome = new PlayerHome(blockPos, (int)yaw, world.dimension(), player.getUUID());
         Main.serverState.setPlayerHome( playerHome );
         messageText = () -> Component.literal("Your ")
                 .append(playerHome.positionHover("home"))
@@ -180,7 +180,7 @@ public class HomeCommand {
         BlockPos blockPos = BlockPosArgument.getBlockPos(context, "position");
         ServerLevel world = DimensionArgument.getDimension(context, "world");
 
-        PlayerHome playerHome = new PlayerHome(blockPos, 0.0, world.dimension(), player.getUuid());
+        PlayerHome playerHome = new PlayerHome(blockPos, 0, world.dimension(), player.getUuid());
         Main.serverState.setPlayerHome( playerHome );
         messageText = () -> Component.literal(player.getName()+ "'s ")
                 .append(playerHome.positionHover("home"))
@@ -218,8 +218,8 @@ public class HomeCommand {
 
             MutableComponent position = Component.literal(homePos.getX() + "x " + homePos.getY() + "y " + homePos.getZ() + "z").withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
             Style style = position.getStyle();
-            HoverEvent goHomeTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click here to visit " + player.getName() + "'s home!"));
-            ClickEvent goHome = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tp " + homePos.getX() + " " + homePos.getY() + " " + homePos.getZ());
+            HoverEvent goHomeTooltip = new HoverEvent.ShowText(Component.literal("Click here to visit " + player.getName() + "'s home!"));
+            ClickEvent goHome = new ClickEvent.RunCommand("/tp " + homePos.getX() + " " + homePos.getY() + " " + homePos.getZ());
             position.setStyle(style.withClickEvent(goHome).withHoverEvent(goHomeTooltip));
 
             messageText = () -> Component.literal(player.getName() + "'s home is at ")
@@ -245,7 +245,7 @@ public class HomeCommand {
             source.sendSuccess(messageText, false);
         }
 
-        if (context.getSource().hasPermissionLevel(3)) {
+        if (PermissionHelpers.hasAdmin(context.getSource())) {
             for (String help : ADMIN_HELP ) {
                 messageText = () -> Component.literal(help).withStyle(Colors.DEFAULT);
                 source.sendSuccess(messageText, false);

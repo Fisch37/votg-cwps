@@ -1,10 +1,13 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.network.NullableCodec;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
@@ -12,7 +15,16 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
+// TODO: Replace @Nullable owner and its transitives with Optional<T>s.
+//  DFU's Codec and Mojang's PacketCodec no longer support nullability,
+//  so Optional as field and parameter types seems to be the go-to.
+//  Note that this will require a class-level @SuppressWarnings("OptionalUsedAsFieldOrParameterType").
+//  I still consider us better served using it.
 public class WaypointKey implements Comparable<WaypointKey> {
+    public static final Codec<WaypointKey> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+            UUIDUtil.CODEC.optionalFieldOf("owner").forGetter(WaypointKey::getOwnerOpt),
+            Codec.STRING.fieldOf("name").forGetter(WaypointKey::getName)
+    ).apply(instance, WaypointKey::fromCodec));
     public static final StreamCodec<RegistryFriendlyByteBuf, WaypointKey> PACKET_CODEC = StreamCodec.composite(
             new NullableCodec<>(UUIDUtil.STREAM_CODEC), WaypointKey::getOwner,
             ByteBufCodecs.STRING_UTF8, WaypointKey::getName,
@@ -26,6 +38,9 @@ public class WaypointKey implements Comparable<WaypointKey> {
 
     public @Nullable UUID getOwner() {
         return owner;
+    }
+    public Optional<UUID> getOwnerOpt() {
+        return Optional.ofNullable(getOwner());
     }
 
     private @Nullable String getOwnerName() {
@@ -44,25 +59,14 @@ public class WaypointKey implements Comparable<WaypointKey> {
         this.owner = owner;
         this.name = name;
     }
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private static WaypointKey fromCodec(Optional<UUID> owner, String name) {
+        return new WaypointKey(owner.orElse(null), name);
+    }
 
     public String toString() {
         if ( this.owner == null ) return name+"/";
         return name+"/"+owner;
-    }
-
-    public CompoundTag toNbt() {
-        CompoundTag nbt = new CompoundTag();
-        nbt.putString("name", this.name);
-        if (this.owner != null) nbt.putUuid("owner", this.owner);
-
-        return nbt;
-    }
-
-    public static WaypointKey fromNbt( CompoundTag nbt ) {
-        return new WaypointKey(
-                nbt.contains("owner") ? nbt.getUuid("owner") : null,
-                nbt.getString("name")
-        );
     }
 
     @Override

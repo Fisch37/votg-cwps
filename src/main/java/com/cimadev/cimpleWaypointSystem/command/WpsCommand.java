@@ -1,6 +1,7 @@
 package com.cimadev.cimpleWaypointSystem.command;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
+import com.cimadev.cimpleWaypointSystem.PermissionHelpers;
 import com.cimadev.cimpleWaypointSystem.Main;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.*;
 import com.cimadev.cimpleWaypointSystem.command.suggestions.AccessSuggestionProvider;
@@ -29,7 +30,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.text.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
@@ -89,7 +89,7 @@ public class WpsCommand {
                     || Objects.requireNonNull(source.getPlayer())
                     .getUUID()
                     .equals(waypoint.getOwner());
-    private static final AccessSuggestionProvider accessSuggestionsAdminsOpen = new AccessSuggestionProvider(source -> source.hasPermissionLevel(3), AccessLevel.OPEN);
+    private static final AccessSuggestionProvider accessSuggestionsAdminsOpen = new AccessSuggestionProvider(PermissionHelpers::hasAdmin, AccessLevel.OPEN);
     private static final AccessSuggestionProvider accessSuggestionsNoOpen = new AccessSuggestionProvider(AccessLevel.OPEN);
     private static final WaypointSuggestionProvider waypointSuggestionsOnlySelf = new WaypointSuggestionProvider(
             false, true,
@@ -138,7 +138,7 @@ public class WpsCommand {
                                         .executes(WpsCommand::wpsAddMine)
                 )))
                 .then(Commands.literal("set")
-                        .requires(source -> source.hasPermissionLevel(3))
+                        .requires(PermissionHelpers::hasAdmin)
                         .then(Commands.argument("name", string())
                                 .then(Commands.argument("owner", word())
                                         .suggests(new OfflinePlayerSuggestionProvider())
@@ -170,7 +170,7 @@ public class WpsCommand {
                                 .suggests(new OfflinePlayerSuggestionProvider())
                                 .executes(WpsCommand::wpsListOwnedAccessible)
                                 .then(Commands.literal("all")
-                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .requires(PermissionHelpers::hasAdmin)
                                         .executes(WpsCommand::wpsListOwnedAll)
                         ))
                         .then(Commands.literal("mine")
@@ -184,11 +184,11 @@ public class WpsCommand {
                                 .suggests(waypointSuggestionsOnlySelf)
                                 .executes(WpsCommand::wpsRemoveMine)
                                 .then(Commands.argument("owner", word())
-                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .requires(PermissionHelpers::hasAdmin)
                                         .executes(WpsCommand::wpsRemoveOwned)
                                 )
                                 .then(Commands.literal("open")
-                                        .requires(source -> source.hasPermissionLevel(3))
+                                        .requires(PermissionHelpers::hasAdmin)
                                         .executes(WpsCommand::wpsRemoveOpen)
                 )))
                 .then(Commands.literal("rename")
@@ -202,10 +202,10 @@ public class WpsCommand {
                                 .then(Commands.argument("newName", string())
                                         .executes(WpsCommand::wpsRenameMine)
                                         .then(Commands.argument("owner", word())
-                                                .requires(source -> source.hasPermissionLevel(3))
+                                                .requires(PermissionHelpers::hasAdmin)
                                                 .executes(WpsCommand::wpsRenameOwned))
                                         .then(Commands.literal("open")
-                                                .requires(source -> source.hasPermissionLevel(3))
+                                                .requires(PermissionHelpers::hasAdmin)
                                                 .executes(WpsCommand::wpsRenameOpen)
                 ))))
                 .then(Commands.literal("access")
@@ -230,7 +230,7 @@ public class WpsCommand {
         // administrator wps options
         dispatcher.register(Commands.literal(COMMAND_NAME)
                 .then(Commands.literal("listAll")
-                        .requires(source -> source.hasPermissionLevel(4)) // only meant for printing to console
+                        .requires(PermissionHelpers::hasOwner) // only meant for printing to console
                         .executes(WpsCommand::wpsListAll)));
     }
 
@@ -245,7 +245,7 @@ public class WpsCommand {
             source.sendSuccess(messageText, false);
         }
 
-        if (context.getSource().hasPermissionLevel(3)) {
+        if (PermissionHelpers.hasAdmin(context.getSource())) {
             for (String help : ADMIN_HELP ) {
                 messageText = () -> Component.literal(help).withStyle(Colors.DEFAULT);
                 source.sendSuccess(messageText, false);
@@ -354,7 +354,7 @@ public class WpsCommand {
         if ( context.getNodes().size() == 4 ) {
             access = AccessLevel.fromContext(context, "access");
         }
-        if (access == AccessLevel.OPEN && !context.getSource().hasPermissionLevel(3)) {
+        if (access == AccessLevel.OPEN && !PermissionHelpers.hasAdmin(context.getSource())) {
             AccessLevel finalAccess = access;
             throw new SimpleCommandExceptionType(() -> "Invalid access type " + finalAccess.getName() + ".").create();
         }
@@ -397,7 +397,9 @@ public class WpsCommand {
         oldWaypoint.setYaw(newWaypoint.getYaw());
         oldWaypoint.setAccess(access);
 
-        HoverEvent movedTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(" Formerly at x: "  + owp.getX() + ", y: " + owp.getY() + ", z: " + owp.getZ()));
+        HoverEvent movedTooltip = new HoverEvent.ShowText(
+                Component.literal(" Formerly at x: "  + owp.getX() + ", y: " + owp.getY() + ", z: " + owp.getZ())
+        );
         MutableComponent moved = Component.literal("Moved").withStyle(ChatFormatting.UNDERLINE);
         Style waypointStyle = moved.getStyle();
         moved.setStyle(waypointStyle.withHoverEvent(movedTooltip));
@@ -775,7 +777,7 @@ public class WpsCommand {
         Waypoint waypoint = Main.serverState.getWaypoint(wpKey);
         if (waypoint != null) {
             if ( Main.serverState.waypointAccess(waypoint, player) ) {
-                PlayerHome home = new PlayerHome(waypoint.getPosition(), (double) waypoint.getYaw(), waypoint.getWorldRegKey(), playerUuid);
+                PlayerHome home = new PlayerHome(waypoint.getPosition(), waypoint.getYaw(), waypoint.getWorldRegKey(), playerUuid);
                 Main.serverState.setPlayerHome( home );
                 messageText = () -> Component.literal("Your ")
                         .append(home.positionHover("home"))
