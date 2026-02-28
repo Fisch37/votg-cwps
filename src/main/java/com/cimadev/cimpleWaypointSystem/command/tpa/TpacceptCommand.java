@@ -29,7 +29,7 @@ public class TpacceptCommand {
     }
 
     private static int acceptTeleport(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        TeleportRequest request = TeleportRequestManager.getInstance().removeRequest(
+        TeleportRequest request = TeleportRequestManager.getInstance().removeRequestByTarget(
                 context.getSource().getPlayerOrException()
         );
         if (request == null) {

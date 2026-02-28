@@ -34,7 +34,7 @@ public class TpdenyCommand {
 
     public static int denyTeleport(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = context.getSource().getPlayerOrException();
-        TeleportRequest request = TeleportRequestManager.getInstance().removeRequest(player);
+        TeleportRequest request = TeleportRequestManager.getInstance().removeRequestByTarget(player);
         if (request == null) {
             player.sendSystemMessage(NO_TPA_ERROR);
             return 0;
