@@ -42,8 +42,7 @@ public class Waypoint implements Comparable<Waypoint> {
 
     private final WaypointKey key;
     private BlockPos position;
-    // TODO: Why is this final? Surely /wps move should work into another dimension?
-    private final ResourceKey<Level> worldRegKey;
+    private ResourceKey<Level> worldRegKey;
     private int yaw;
     private AccessLevel access;
 
@@ -100,8 +99,9 @@ public class Waypoint implements Comparable<Waypoint> {
         );
     }
 
-    public void setPosition( BlockPos position ) {
+    public void setPosition( BlockPos position, ResourceKey<Level> dimension ) {
         this.position = position;
+        this.worldRegKey = dimension;
     }
 
     public void setYaw( int yaw ) {

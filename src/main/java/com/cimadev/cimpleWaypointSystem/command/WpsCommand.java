@@ -398,7 +398,7 @@ public class WpsCommand {
         BlockPos nwp = newWaypoint.getPosition();
         AccessLevel access = newWaypoint.getAccess();
         BlockPos owp = oldWaypoint.getPosition();
-        oldWaypoint.setPosition(nwp);
+        oldWaypoint.setPosition(nwp, newWaypoint.getWorldRegKey());
         oldWaypoint.setYaw(newWaypoint.getYaw());
         oldWaypoint.setAccess(access);
 
