@@ -32,6 +32,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
@@ -530,7 +531,7 @@ public class WpsCommand {
         return 1;
     }
 
-    private static int wpsListAll(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    private static int wpsListAll(CommandContext<CommandSourceStack> context) {
         List<Waypoint> waypoints = WpsUtils.getAllWaypoints();
         printWaypointsToUser(context, waypoints);
         return 1;
@@ -554,7 +555,7 @@ public class WpsCommand {
         return 1;
 
     }
-    private static int wpsListOpen(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    private static int wpsListOpen(CommandContext<CommandSourceStack> context) {
 
         ServerPlayer player = context.getSource().getPlayer();
         List<Waypoint> waypoints = WpsUtils.getAccessibleWaypoints(player, null, false, true);
@@ -615,7 +616,7 @@ public class WpsCommand {
         return wpsRemove(context, waypoint, name, true);
     }
 
-    private static int wpsRemoveOpen(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    private static int wpsRemoveOpen(CommandContext<CommandSourceStack> context) {
         String name = StringArgumentType.getString(context, "name");
         WaypointKey wpKey = new WaypointKey(Optional.empty(), name);
         Waypoint waypoint = Main.serverState.getWaypoint(wpKey);
@@ -729,7 +730,7 @@ public class WpsCommand {
             String oldName,
             String newName,
             boolean ownedByCaller
-    ) throws CommandSyntaxException {
+    ) {
         Supplier<Component> messageText;
 
         MutableComponent ownerTitle;
@@ -775,20 +776,20 @@ public class WpsCommand {
         String name = StringArgumentType.getString(context, "name");
         OfflinePlayer owner;
         MutableComponent ownerName;
-        UUID ownerUuid;
+        @NotNull Optional<UUID> ownerUuid;
         if (context.getNodes().size() == 4) {
             try {
                 owner = OfflinePlayer.fromContext(context, "owner");
                 ownerName = Component.literal(owner.getName() + "'s ");
-                ownerUuid = owner.getUuid();
+                ownerUuid = Optional.of(owner.getUuid());
             } catch (Exception e) {
                 ownerName = Component.literal("open ").withStyle(Colors.PUBLIC);
-                ownerUuid = null;
+                ownerUuid = Optional.empty();
             }
         } else {
             owner = Main.serverState.getPlayerByUuid(playerUuid);
             ownerName = Component.literal("Your ");
-            ownerUuid = owner.getUuid();
+            ownerUuid = Optional.of(owner.getUuid());
         }
 
         MutableComponent finalOwnerName = ownerName;
