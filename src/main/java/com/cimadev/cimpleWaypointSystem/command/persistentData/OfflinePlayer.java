@@ -13,8 +13,8 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.UUID;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 
 
 public class OfflinePlayer implements Comparable<OfflinePlayer> {
@@ -28,18 +28,18 @@ public class OfflinePlayer implements Comparable<OfflinePlayer> {
             o -> Component.literal("Player ").append( Component.literal( o+"" ).withStyle(Colors.LINK_INACTIVE) )
                     .append( " not found. Did they change their name?").withStyle(Colors.DEFAULT));
 
-    private final UUID uuid;
-    private String name;
+    private final @NotNull UUID uuid;
+    private @NotNull String name;
 
-    public UUID getUuid() {
+    public @NotNull UUID getUuid() {
         return this.uuid;
     }
 
-    public String getName() {
+    public @NotNull String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public void setName(@NotNull String name) {
         this.name = name;
     }
 
@@ -64,10 +64,10 @@ public class OfflinePlayer implements Comparable<OfflinePlayer> {
     }
 
     public static OfflinePlayer fromName(String name) throws NullPointerException {
-        return Main.serverState.getPlayerByName( name );
+        return Main.serverState.getPlayerByName(name);
     }
 
-    public static OfflinePlayer fromUuid(UUID uuid){
+    public static @Nullable OfflinePlayer fromUuid(UUID uuid){
         return Main.serverState.getPlayerByUuid(uuid);
     }
 

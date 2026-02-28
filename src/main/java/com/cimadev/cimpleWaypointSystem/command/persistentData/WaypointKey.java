@@ -1,50 +1,44 @@
 package com.cimadev.cimpleWaypointSystem.command.persistentData;
 
-import com.cimadev.cimpleWaypointSystem.network.NullableCodec;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import net.minecraft.core.UUIDUtil;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import org.jspecify.annotations.NonNull;
 
-// TODO: Replace @Nullable owner and its transitives with Optional<T>s.
-//  DFU's Codec and Mojang's PacketCodec no longer support nullability,
-//  so Optional as field and parameter types seems to be the go-to.
-//  Note that this will require a class-level @SuppressWarnings("OptionalUsedAsFieldOrParameterType").
-//  I still consider us better served using it.
+@SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class WaypointKey implements Comparable<WaypointKey> {
     public static final Codec<WaypointKey> CODEC = RecordCodecBuilder.create(instance -> instance.group(
-            UUIDUtil.CODEC.optionalFieldOf("owner").forGetter(WaypointKey::getOwnerOpt),
+            UUIDUtil.CODEC.optionalFieldOf("owner").forGetter(WaypointKey::getOwner),
             Codec.STRING.fieldOf("name").forGetter(WaypointKey::getName)
-    ).apply(instance, WaypointKey::fromCodec));
+    ).apply(instance, WaypointKey::new));
     public static final StreamCodec<RegistryFriendlyByteBuf, WaypointKey> PACKET_CODEC = StreamCodec.composite(
-            new NullableCodec<>(UUIDUtil.STREAM_CODEC), WaypointKey::getOwner,
+            ByteBufCodecs.optional(UUIDUtil.STREAM_CODEC), WaypointKey::getOwner,
             ByteBufCodecs.STRING_UTF8, WaypointKey::getName,
-            new NullableCodec<>(ByteBufCodecs.STRING_UTF8), WaypointKey::getOwnerName,
+            ByteBufCodecs.optional(ByteBufCodecs.STRING_UTF8), WaypointKey::getOwnerName,
             (uuid, name, ownerName) -> new WaypointKey(uuid, name)
     );
 
-    @Nullable
-    private final UUID owner;
+    private final @NotNull Optional<UUID> owner;
+    // FIXME: WaypointKey.name should be final, because it is used in hashCode.
+    //  Changing the hash of a key while it is part of a hash map is undefined behaviour.
     private String name;
 
-    public @Nullable UUID getOwner() {
+    public @NotNull Optional<UUID> getOwner() {
         return owner;
     }
-    public Optional<UUID> getOwnerOpt() {
-        return Optional.ofNullable(getOwner());
-    }
 
-    private @Nullable String getOwnerName() {
-        return owner == null ? null : OfflinePlayer.fromUuid(owner).getName();
+    private Optional<String> getOwnerName() {
+        return owner.map(OfflinePlayer::fromUuid)
+                .map(OfflinePlayer::getName)
+                ;
     }
 
     public String getName() {
@@ -55,29 +49,29 @@ public class WaypointKey implements Comparable<WaypointKey> {
         this.name = name;
     }
 
-    public WaypointKey(@Nullable UUID owner, String name) {
+    public WaypointKey(@NotNull UUID owner, String name) {
+        this.owner = Optional.of(owner);
+        this.name = name;
+    }
+    public WaypointKey(@NotNull Optional<@NotNull UUID> owner, @NotNull String name) {
         this.owner = owner;
         this.name = name;
     }
-    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    private static WaypointKey fromCodec(Optional<UUID> owner, String name) {
-        return new WaypointKey(owner.orElse(null), name);
-    }
 
     public String toString() {
-        if ( this.owner == null ) return name+"/";
-        return name+"/"+owner;
+        return owner.map(owner -> name + "/" + owner)
+                .orElseGet(() -> name + "/");
     }
 
     @Override
     public int hashCode() {
-        if ( this.owner == null ) return name.toLowerCase().hashCode();
-        return owner.hashCode() * name.toLowerCase().hashCode();
+        return Objects.hash(owner, name);
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (! (obj instanceof WaypointKey that) ) return false;
+        if (! (obj instanceof WaypointKey that) )
+            return false;
 
         final boolean sameName = this.name.equalsIgnoreCase(that.name);
         return sameName && Objects.equals(this.owner, that.owner);
@@ -97,14 +91,14 @@ public class WaypointKey implements Comparable<WaypointKey> {
      */
     @Override
     public int compareTo(@NotNull WaypointKey that) {
-        if (Objects.equals(this.owner, that.getOwner())) {
+        if (Objects.equals(this.owner, that.owner)) {
             return Math.clamp(this.name.compareToIgnoreCase(that.name), -1, 1);
         } else {
-            if (this.owner == null)
+            if (this.owner.isEmpty())
                 return -1;
-            else if (that.owner == null)
+            else if (that.owner.isEmpty())
                 return 1;
-            return Math.clamp(this.owner.compareTo(that.owner), -1, 1);
+            return Math.clamp(this.owner.get().compareTo(that.owner.get()), -1, 1);
         }
     }
 }

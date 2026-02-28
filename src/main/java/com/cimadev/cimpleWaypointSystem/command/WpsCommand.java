@@ -268,12 +268,15 @@ public class WpsCommand {
     private static int wpsGoDerived(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String waypointName = StringArgumentType.getString(context, "name");
         boolean preferOpen = config.preferOpenForDerived.get();
+        var player = context.getSource().getPlayerOrException();
         final CommandFunction forOpen = () -> executeWpsGo(context, null);
         final CommandFunction forSelf = () -> executeWpsGo(
                 context,
-                OfflinePlayer.fromUuid(context.getSource().getPlayerOrException().getUUID())
+                OfflinePlayer.fromUuid(player.getUUID())
         );
-        UUID owner = preferOpen ? null : context.getSource().getPlayerOrException().getUUID();
+        Optional<UUID> owner = preferOpen
+                ? Optional.empty()
+                : Optional.of(player.getUUID());
         if (Main.serverState.waypointExists(new WaypointKey(owner, waypointName)))
             return preferOpen ? forOpen.run() : forSelf.run();
         else
@@ -293,15 +296,11 @@ public class WpsCommand {
         MinecraftServer server = commandSource.getServer();
         String name = StringArgumentType.getString(context, "name");
 
-        UUID ownerUuid = owner == null ? null : owner.getUuid();
+        Optional<UUID> ownerUuid = Optional.ofNullable(owner).map(OfflinePlayer::getUuid);
         Waypoint waypoint = Main.serverState.getWaypoint(new WaypointKey(ownerUuid, name));
-        String ownerName;
-        if (owner != null) {
-            if (ownerUuid.equals(player.getUUID())) ownerName = "your ";
-            else ownerName = owner.getName() + "'s ";
-        } else {
-            ownerName = "";
-        }
+        String ownerName = ownerUuid
+                .map(uuid -> uuid.equals(player.getUUID()) ? "your " : owner.getName() + "'s ")
+                .orElse("");
 
         if (waypoint != null && Main.serverState.waypointAccess(waypoint, player)) {
             Vec3 wpPos = waypoint.getPosition().getBottomCenter();
@@ -359,8 +358,14 @@ public class WpsCommand {
             throw new SimpleCommandExceptionType(() -> "Invalid access type " + finalAccess.getName() + ".").create();
         }
 
-        UUID owner = (access == AccessLevel.OPEN ? null : player.getUUID());
-        Waypoint newWaypoint = new Waypoint(name, blockPos, yaw, world.dimension(), owner, access);
+        Optional<UUID> owner = (access == AccessLevel.OPEN ? Optional.empty() : Optional.of(player.getUUID()));
+        Waypoint newWaypoint = new Waypoint(
+                new WaypointKey(owner, name),
+                blockPos,
+                world.dimension(),
+                (int)yaw,
+                access
+        );
         Waypoint oldWaypoint = Main.serverState.getWaypoint(newWaypoint.getKey());
         if ( oldWaypoint == null ) {
             messageText = () -> wpsAdd(newWaypoint);
@@ -443,33 +448,48 @@ public class WpsCommand {
         }
 
         CommandSourceStack source = context.getSource();
-        String name = StringArgumentType.getString(context, "name");
-        BlockPos pos = BlockPos.containing(source.getPosition());
-        double yaw = source.getRotation().x;
-        ResourceKey<Level> world = source.getLevel().dimension();
+        final String name = StringArgumentType.getString(context, "name");
 
-        UUID owner = null;
+        Optional<UUID> owner;
         // I swear this was the best option available
         if (!isOpen) {
+            UUID ownerDefinite;
             try {
-                owner = OfflinePlayer.fromContext(context, "owner").getUuid();
+                ownerDefinite = OfflinePlayer.fromContext(context, "owner").getUuid();
             } catch (CommandSyntaxException e) {
-                owner = UuidArgument.getUuid(context, "owner");
+                ownerDefinite = UuidArgument.getUuid(context, "owner");
             }
+            owner = Optional.of(ownerDefinite);
+        } else {
+            owner = Optional.empty();
         }
+        BlockPos pos;
         try {
             pos = BlockPosArgument.getBlockPos(context, "pos");
-        } catch (IllegalArgumentException e) { }
+        } catch (IllegalArgumentException e) {
+            pos = BlockPos.containing(source.getPosition());
+        }
+        double yaw;
         try {
             yaw = DoubleArgumentType.getDouble(context, "yaw");
-        } catch (IllegalArgumentException e) { }
+        } catch (IllegalArgumentException e) {
+            yaw = source.getRotation().x;
+        }
+        ResourceKey<Level> world;
         try {
             world = DimensionArgument
                     .getDimension(context, "dimension")
                     .dimension();
-        } catch (IllegalArgumentException e) { }
+        } catch (IllegalArgumentException e) {
+            world = source.getLevel().dimension();
+        }
 
-        Waypoint waypoint = new Waypoint(name, pos, yaw, world, owner, accessLevel);
+        Waypoint waypoint = new Waypoint(
+                new WaypointKey(owner, name),
+                pos, world,
+                (int)yaw,
+                accessLevel
+        );
         serverState.setWaypoint(waypoint);
 
         source.sendSuccess(
@@ -597,7 +617,7 @@ public class WpsCommand {
 
     private static int wpsRemoveOpen(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String name = StringArgumentType.getString(context, "name");
-        WaypointKey wpKey = new WaypointKey(null, name);
+        WaypointKey wpKey = new WaypointKey(Optional.empty(), name);
         Waypoint waypoint = Main.serverState.getWaypoint(wpKey);
         return wpsRemove(context, waypoint, name, false);
     }
@@ -689,7 +709,7 @@ public class WpsCommand {
     private static int wpsRenameOpen(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         String oldName = StringArgumentType.getString(context, "oldName");
         String newName = StringArgumentType.getString(context, "newName");
-        WaypointKey wpKey = new WaypointKey(null, oldName);
+        WaypointKey wpKey = new WaypointKey(Optional.empty(), oldName);
         Waypoint waypoint = Main.serverState.getWaypoint(wpKey);
         return wpsRename(context, waypoint, oldName, newName, false);
     }

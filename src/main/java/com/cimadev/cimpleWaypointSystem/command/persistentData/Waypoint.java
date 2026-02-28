@@ -47,19 +47,11 @@ public class Waypoint implements Comparable<Waypoint> {
     private int yaw;
     private AccessLevel access;
 
-    private Waypoint(WaypointKey key, BlockPos pos, ResourceKey<Level> world, int yaw, AccessLevel access) {
+    public Waypoint(WaypointKey key, BlockPos pos, ResourceKey<Level> world, int yaw, AccessLevel access) {
         this.key = key;
         this.position = pos;
         this.worldRegKey = world;
         this.yaw = yaw;
-        this.access = access;
-    }
-
-    public Waypoint(String name, BlockPos position, Double yaw, ResourceKey<Level> world, UUID owner, AccessLevel access) {
-        this.key = new WaypointKey(owner, name);
-        this.position = position;
-        this.yaw = yaw.intValue();
-        this.worldRegKey = world;
         this.access = access;
     }
 
@@ -77,7 +69,7 @@ public class Waypoint implements Comparable<Waypoint> {
 
     @Nullable
     public UUID getOwner() {
-        return key.getOwner();
+        return key.getOwner().orElse(null);
     }
 
     @Nullable
