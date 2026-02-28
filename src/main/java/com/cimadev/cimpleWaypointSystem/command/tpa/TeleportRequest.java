@@ -3,14 +3,17 @@ package com.cimadev.cimpleWaypointSystem.command.tpa;
 import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
 import de.fisch37.datastructures.mi.MINode;
 import java.util.HashSet;
+
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 public class TeleportRequest extends MINode {
-        private final Player origin, target;
+        private final ServerPlayer origin;
+        private final ServerPlayer target;
         private final boolean inverted;
         private long expiresAt;
 
-        public TeleportRequest(Player origin, Player target, boolean inverted) {
+        public TeleportRequest(ServerPlayer origin, ServerPlayer target, boolean inverted) {
                 this.origin = origin;
                 this.target = target;
                 this.inverted = inverted;
@@ -36,10 +39,10 @@ public class TeleportRequest extends MINode {
                 return inverted;
         }
 
-        private void perform(Player tpOrigin, Player tpTarget) {
+        private void perform(ServerPlayer tpOrigin, ServerPlayer tpTarget) {
                 WpsUtils.teleport(
                         tpOrigin,
-                        tpTarget.getServer().getWorld(tpTarget.getWorld().getRegistryKey()),
+                        tpTarget.level(),
                         tpTarget.getX(),
                         tpTarget.getY(),
                         tpTarget.getZ(),

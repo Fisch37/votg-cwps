@@ -3,6 +3,7 @@ package com.cimadev.cimpleWaypointSystem.command.persistentData;
 import com.cimadev.cimpleWaypointSystem.Colors;
 import java.util.UUID;
 
+import com.cimadev.cimpleWaypointSystem.command.FormattingHelpers;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.ChatFormatting;
@@ -33,6 +34,13 @@ public class PlayerHome {
 
     private UUID owner;
 
+    public PlayerHome (BlockPos position, int yaw, ResourceKey<Level> world, UUID owner) {
+        this.position = position;
+        this.yaw = yaw;
+        this.worldRegKey = world;
+        this.owner = owner;
+    }
+
     public BlockPos getPosition() {
         return position;
     }
@@ -50,19 +58,12 @@ public class PlayerHome {
     }
 
     public Component positionHover(String text) {
-        HoverEvent positionTooltip = new HoverEvent.ShowText(
-                Component.literal("x: " + position.getX() + ", y: " + position.getY() + ", z: " + position.getZ())
-        );
+        // This breaks cohesion and creates a relatively strong coupling with the command package.
+        // Someone should eventually rewrite this
+        HoverEvent positionTooltip = new HoverEvent.ShowText(FormattingHelpers.getPositionFormatted(position));
         MutableComponent formatted = Component.literal(text).withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
         Style waypointStyle = formatted.getStyle();
         formatted.setStyle(waypointStyle.withHoverEvent(positionTooltip));
         return formatted;
-    }
-
-    public PlayerHome (BlockPos position, int yaw, ResourceKey<Level> world, UUID owner) {
-        this.position = position;
-        this.yaw = yaw;
-        this.worldRegKey = world;
-        this.owner = owner;
     }
 }

@@ -3,6 +3,7 @@ package com.cimadev.cimpleWaypointSystem.command;
 import com.cimadev.cimpleWaypointSystem.Colors;
 import com.cimadev.cimpleWaypointSystem.Main;
 import com.cimadev.cimpleWaypointSystem.PermissionHelpers;
+import com.cimadev.cimpleWaypointSystem.RespawnHelper;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
 import com.cimadev.cimpleWaypointSystem.command.persistentData.PlayerHome;
 import com.mojang.brigadier.CommandDispatcher;
@@ -84,17 +85,13 @@ public class HomeCommand {
         // Determine world, homePos, respawnForced
         if ( playerHome == null ) {
             // Set target location to spawn point
-            world = player.getServer().getWorld(player.getSpawnPointDimension());
-            homePos = player.getSpawnPointPosition();
-
-            if ( homePos == null ) {
-                world = player.getServer().getOverworld();
-                homePos = world.getSpawnPos();
-            }
+            var respawn = RespawnHelper.getRespawnData(player);
+            world = player.level().getServer().getLevel(respawn.dimension());
+            homePos = respawn.pos();
 
             MutableComponent spawnpoint = Component.literal("spawnpoint").withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
             Style style = spawnpoint.getStyle();
-            HoverEvent spawncoords = new HoverEvent.ShowText(Component.literal("x: " + homePos.getX() + ", y: " + homePos.getY() + ", z: " + homePos.getZ()));
+            HoverEvent spawncoords = new HoverEvent.ShowText(FormattingHelpers.getPositionFormatted(homePos));
             spawnpoint.setStyle(style.withHoverEvent(spawncoords));
             messageText = () -> Component.literal("Teleported to your ")
                     .append(spawnpoint)
@@ -104,7 +101,7 @@ public class HomeCommand {
             // Set target location to home
             homePos = playerHome.getPosition();
             yaw = playerHome.getYaw();
-            world = player.getServer().getWorld(playerHome.worldRegistryKey());
+            world = player.level().getServer().getLevel(playerHome.worldRegistryKey());
 
             messageText = () -> Component.literal("Teleported to your ")
                     .append(playerHome.positionHover("home"))
@@ -141,19 +138,26 @@ public class HomeCommand {
         Supplier<Component> messageText;
         ServerPlayer player = context.getSource().getPlayerOrException();
         PlayerHome playerHome = Main.serverState.getPlayerHome(player.getUUID());
+
+        HoverEvent goHomeTooltip = new HoverEvent.ShowText(Component.literal("Click here to go home!"));
+        ClickEvent goHome = new ClickEvent.RunCommand("/home");
         if ( playerHome != null ) {
-            BlockPos pHposition = playerHome.getPosition();
-            ServerLevel world = player.getServer().getWorld(playerHome.worldRegistryKey());
+            BlockPos homePos = playerHome.getPosition();
+            ServerLevel world = player.level().getServer().getLevel(playerHome.worldRegistryKey());
             String worldName;
             if ( world != null ) {
-                worldName = world.dimensionTypeRegistration().unwrapKey().get().identifier().getPath(); // Iamhere
+                // FIXME: Surely there is a better way to get the world identifier?
+                worldName = world.dimensionTypeRegistration()
+                        .unwrapKey()
+                        .get()
+                        .identifier()
+                        .getPath();
             } else {
                 worldName = "[world could not be identified]";
             }
-            MutableComponent here = Component.literal(pHposition.getX() + "x " + pHposition.getY() + "y " + pHposition.getZ() + "z").withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
+            MutableComponent here = FormattingHelpers.getPositionFormatted(homePos)
+                    .withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
             Style style = here.getStyle();
-            HoverEvent goHomeTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click here to go home!"));
-            ClickEvent goHome = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home");
             here.setStyle(style.withClickEvent(goHome).withHoverEvent(goHomeTooltip));
             messageText = () -> Component.literal("At ")
                     .append(here)
@@ -162,8 +166,6 @@ public class HomeCommand {
         } else {
             MutableComponent respawnPoint = Component.literal("respawn point").withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
             Style style = respawnPoint.getStyle();
-            HoverEvent goHomeTooltip = new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Click here to go home!"));
-            ClickEvent goHome = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home");
             respawnPoint.setStyle(style.withClickEvent(goHome).withHoverEvent(goHomeTooltip));
             messageText = () -> Component.literal("You have not set a home. You will be teleported to your ")
                     .append(respawnPoint)
@@ -211,12 +213,12 @@ public class HomeCommand {
         Supplier<Component> messageText;
 
         OfflinePlayer player = OfflinePlayer.fromContext(context, "owner");
-        PlayerHome ph = Main.serverState.getPlayerHome(player.getUuid());
+        PlayerHome home = Main.serverState.getPlayerHome(player.getUuid());
 
-        if ( ph != null ) {
-            BlockPos homePos = ph.getPosition();
+        if ( home != null ) {
+            BlockPos homePos = home.getPosition();
 
-            MutableComponent position = Component.literal(homePos.getX() + "x " + homePos.getY() + "y " + homePos.getZ() + "z").withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
+            MutableComponent position = FormattingHelpers.getPositionFormatted(homePos).withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
             Style style = position.getStyle();
             HoverEvent goHomeTooltip = new HoverEvent.ShowText(Component.literal("Click here to visit " + player.getName() + "'s home!"));
             ClickEvent goHome = new ClickEvent.RunCommand("/tp " + homePos.getX() + " " + homePos.getY() + " " + homePos.getZ());
