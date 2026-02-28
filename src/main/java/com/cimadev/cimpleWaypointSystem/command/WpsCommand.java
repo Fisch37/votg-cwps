@@ -723,11 +723,17 @@ public class WpsCommand {
         return wpsRename(context, waypoint, oldName, newName, false);
     }
 
-    private static int wpsRename(CommandContext<CommandSourceStack> context, Waypoint waypoint, String oldName, String newName, boolean ownedByCaller) throws CommandSyntaxException {
+    private static int wpsRename(
+            CommandContext<CommandSourceStack> context,
+            Waypoint oldWaypoint,
+            String oldName,
+            String newName,
+            boolean ownedByCaller
+    ) throws CommandSyntaxException {
         Supplier<Component> messageText;
 
         MutableComponent ownerTitle;
-        UUID ownerUuid = (waypoint == null) ? null : waypoint.getOwner();
+        UUID ownerUuid = (oldWaypoint == null) ? null : oldWaypoint.getOwner();
         if ( ownedByCaller ) ownerTitle = Component.literal("Your ");
         else {
             if ( ownerUuid == null ) {
@@ -737,22 +743,20 @@ public class WpsCommand {
             }
         }
 
-        if (waypoint == null) {
-            String finalOldName = oldName;
+        if (oldWaypoint == null) {
             messageText = () -> ownerTitle.append("waypoint ")
-                    .append(Component.literal(finalOldName).withStyle(Colors.LINK_INACTIVE))
+                    .append(Component.literal(oldName).withStyle(Colors.LINK_INACTIVE))
                     .append(Component.literal(" could not be found."))
                     .withStyle(Colors.DEFAULT);
         } else {
-            Main.serverState.removeWaypoint(waypoint.getKey());
-            oldName = waypoint.getName();
-            waypoint.rename(newName);
-            Main.serverState.setWaypoint( waypoint );
-            String finalOldName = oldName;
+            Main.serverState.removeWaypoint(oldWaypoint.getKey());
+            var newWaypoint = oldWaypoint.withName(newName);
+            Main.serverState.setWaypoint(newWaypoint);
             MutableComponent message = Component.literal("Your waypoint ");
-            if ( ownerUuid != null ) message.append(Component.literal(finalOldName).withStyle(Colors.LINK_INACTIVE));
+            if ( ownerUuid != null )
+                message.append(Component.literal(oldName).withStyle(Colors.LINK_INACTIVE));
             message.append(Component.literal(" is now called "))
-                    .append(waypoint.getNameFormatted())
+                    .append(newWaypoint.getNameFormatted())
                     .append(".")
                     .withStyle(Colors.DEFAULT);
             messageText = () -> message;

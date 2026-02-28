@@ -73,6 +73,7 @@ public class ServerState extends SavedData {
         return playerHomes.get(uuid);
     }
 
+    /// Adds a new waypoint, replacing any other waypoint with the same key
     public void setWaypoint(Waypoint waypoint) {
         worldWideWaypoints.put(waypoint.getKey(), waypoint);
     }

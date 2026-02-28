@@ -56,7 +56,7 @@ public class Waypoint implements Comparable<Waypoint> {
     }
 
     public String getName() {
-        return key.getName();
+        return key.name();
     }
 
     public BlockPos getPosition() {
@@ -69,7 +69,7 @@ public class Waypoint implements Comparable<Waypoint> {
 
     @Nullable
     public UUID getOwner() {
-        return key.getOwner().orElse(null);
+        return key.owner().orElse(null);
     }
 
     @Nullable
@@ -86,13 +86,18 @@ public class Waypoint implements Comparable<Waypoint> {
         return worldRegKey;
     }
 
-    public void setName( String name ) {
-        this.key.setName(name);
-    }
-
-
-    public void rename( String name ) {
-        setName( name );
+    /// Creates a new {@link Waypoint} with the same data as the old one,
+    /// <em>except</em> its name, which will be set to `name`.
+    // Cloning the Waypoint object is necessary, because WaypointKey must always be immutable.
+    // Replacing solely Waypoint#key is also dangerous, because doing so may desync a HashMap<WaypointKey, Waypoint>
+    public Waypoint withName(String name) {
+        return new Waypoint(
+                new WaypointKey(this.key.owner(), name),
+                this.position,
+                this.worldRegKey,
+                this.yaw,
+                this.access
+        );
     }
 
     public void setPosition( BlockPos position ) {
@@ -133,7 +138,7 @@ public class Waypoint implements Comparable<Waypoint> {
         } catch (IllegalStateException | IllegalArgumentException e) {
             waypointCommand = null;
         }
-        MutableComponent waypointName = Component.literal(key.getName()).withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
+        MutableComponent waypointName = Component.literal(key.name()).withStyle(Colors.LINK, ChatFormatting.UNDERLINE);
         Style waypointStyle = waypointName.getStyle()
                 .withHoverEvent(waypointTooltip);
         if (waypointCommand != null)
