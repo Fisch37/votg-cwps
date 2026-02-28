@@ -3,7 +3,7 @@ package com.cimadev.cimpleWaypointSystem.command;
 import com.cimadev.cimpleWaypointSystem.Colors;
 import com.cimadev.cimpleWaypointSystem.PermissionHelpers;
 import com.cimadev.cimpleWaypointSystem.Main;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.*;
+import com.cimadev.cimpleWaypointSystem.persistentData.*;
 import com.cimadev.cimpleWaypointSystem.command.suggestions.AccessSuggestionProvider;
 import com.cimadev.cimpleWaypointSystem.command.suggestions.OfflinePlayerSuggestionProvider;
 import com.cimadev.cimpleWaypointSystem.command.suggestions.WaypointSuggestionProvider;

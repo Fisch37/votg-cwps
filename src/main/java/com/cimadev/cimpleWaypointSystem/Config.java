@@ -1,11 +1,10 @@
 package com.cimadev.cimpleWaypointSystem;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
+import com.cimadev.cimpleWaypointSystem.persistentData.AccessLevel;
 import com.cimadev.cimpleWaypointSystem.config.AccessLevelList;
 import com.cimadev.cimpleWaypointSystem.config.AccessLevelListSerializer;
 import com.cimadev.cimpleWaypointSystem.config.AccessLevelSerializer;
 import de.maxhenkel.configbuilder.ConfigBuilder;
-import de.maxhenkel.configbuilder.custom.StringList;
 import de.maxhenkel.configbuilder.entry.ConfigEntry;
 
 import java.nio.file.Path;

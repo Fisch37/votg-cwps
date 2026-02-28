@@ -1,6 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.config;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
+import com.cimadev.cimpleWaypointSystem.persistentData.AccessLevel;
 import de.maxhenkel.configbuilder.custom.AbstractValueList;
 
 import java.util.List;

@@ -1,6 +1,6 @@
 package com.cimadev.cimpleWaypointSystem;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.ServerState;
+import com.cimadev.cimpleWaypointSystem.persistentData.ServerState;
 import com.cimadev.cimpleWaypointSystem.network.NetworkHandler;
 import com.cimadev.cimpleWaypointSystem.registry.ModRegistries;
 import net.fabricmc.api.ModInitializer;

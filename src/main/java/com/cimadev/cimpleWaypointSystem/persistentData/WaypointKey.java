@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.command.persistentData;
+package com.cimadev.cimpleWaypointSystem.persistentData;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;

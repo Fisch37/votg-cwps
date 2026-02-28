@@ -1,6 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.suggestions;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
+import com.cimadev.cimpleWaypointSystem.persistentData.AccessLevel;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;

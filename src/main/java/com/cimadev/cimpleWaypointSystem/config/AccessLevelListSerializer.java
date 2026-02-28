@@ -1,7 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.config;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.AccessLevel;
-import de.maxhenkel.configbuilder.entry.serializer.EnumSerializer;
+import com.cimadev.cimpleWaypointSystem.persistentData.AccessLevel;
 import de.maxhenkel.configbuilder.entry.serializer.ValueSerializer;
 
 import java.util.ArrayList;

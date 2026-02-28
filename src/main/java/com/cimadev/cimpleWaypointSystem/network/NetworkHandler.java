@@ -3,7 +3,7 @@ package com.cimadev.cimpleWaypointSystem.network;
 import com.cimadev.cimpleWaypointSystem.PermissionHelpers;
 import com.cimadev.cimpleWaypointSystem.Main;
 import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
+import com.cimadev.cimpleWaypointSystem.persistentData.Waypoint;
 import com.cimadev.cimpleWaypointSystem.network.packet.WaypointInfo;
 import com.cimadev.cimpleWaypointSystem.network.packet.WaypointsPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;

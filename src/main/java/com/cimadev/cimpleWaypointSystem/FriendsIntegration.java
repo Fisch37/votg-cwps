@@ -1,6 +1,6 @@
 package com.cimadev.cimpleWaypointSystem;
 
-import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
+import com.cimadev.cimpleWaypointSystem.persistentData.OfflinePlayer;
 import net.fabricmc.loader.api.FabricLoader;
 
 import java.util.*;

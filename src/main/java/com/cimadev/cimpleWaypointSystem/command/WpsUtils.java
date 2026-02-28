@@ -1,8 +1,8 @@
 package com.cimadev.cimpleWaypointSystem.command;
 
 import com.cimadev.cimpleWaypointSystem.Main;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.OfflinePlayer;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
+import com.cimadev.cimpleWaypointSystem.persistentData.OfflinePlayer;
+import com.cimadev.cimpleWaypointSystem.persistentData.Waypoint;
 import net.minecraft.core.BlockPos;
 import org.jetbrains.annotations.Nullable;
 

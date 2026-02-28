@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.command.persistentData;
+package com.cimadev.cimpleWaypointSystem.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.Colors;
 import java.util.UUID;
@@ -10,12 +10,10 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
-import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 

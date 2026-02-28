@@ -1,6 +1,6 @@
 package com.cimadev.cimpleWaypointSystem.command.suggestions;
 import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
-import com.cimadev.cimpleWaypointSystem.command.persistentData.Waypoint;
+import com.cimadev.cimpleWaypointSystem.persistentData.Waypoint;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiPredicate;
+
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
 

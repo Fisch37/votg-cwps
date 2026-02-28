@@ -1,4 +1,4 @@
-package com.cimadev.cimpleWaypointSystem.command.persistentData;
+package com.cimadev.cimpleWaypointSystem.persistentData;
 
 import com.cimadev.cimpleWaypointSystem.FriendsIntegration;
 import com.cimadev.cimpleWaypointSystem.Main;
