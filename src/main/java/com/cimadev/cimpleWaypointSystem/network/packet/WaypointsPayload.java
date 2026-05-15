@@ -5,6 +5,8 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import org.jspecify.annotations.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,7 +20,7 @@ public record WaypointsPayload(List<WaypointInfo> waypoints) implements CustomPa
     );
 
     @Override
-    public Type<? extends CustomPacketPayload> type() {
+    public @NonNull Type<? extends CustomPacketPayload> type() {
         return WAYPOINTS;
     }
 

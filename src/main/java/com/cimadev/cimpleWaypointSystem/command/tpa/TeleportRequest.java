@@ -2,7 +2,6 @@ package com.cimadev.cimpleWaypointSystem.command.tpa;
 
 import com.cimadev.cimpleWaypointSystem.command.WpsUtils;
 import de.fisch37.datastructures.mi.MINode;
-import java.util.HashSet;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
