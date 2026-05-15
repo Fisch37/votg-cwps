@@ -15,7 +15,7 @@ public class SpawnCommand {
 
     private static final String COMMAND_NAME = "spawn";
 
-    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext commandRegistryAccess, Commands.CommandSelection registrationEnvironment) {
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher, CommandBuildContext ignored1, Commands.CommandSelection ignored2) {
 
         dispatcher.register(Commands.literal(COMMAND_NAME)
                 .executes(SpawnCommand::goSpawn)
@@ -39,7 +39,7 @@ public class SpawnCommand {
         return 1;
     }
 
-    public static int help(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+    public static int help(CommandContext<CommandSourceStack> context) {
         Supplier<Component> messageText = () -> Component.literal("The command /spawn takes you to the overworld's default spawn point.").withStyle(Colors.DEFAULT);
         context.getSource().sendSuccess(messageText, false);
         return 1;
